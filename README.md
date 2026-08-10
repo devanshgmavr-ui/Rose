@@ -141,7 +141,10 @@ Windows / Filesystem / Browser / Sandbox
 | 5.1 | Controlled Application Launching | COMPLETE |
 | 5.2 | Advanced File Automation | COMPLETE |
 | 5.3 | Controlled CLI Automation | COMPLETE |
-| 6.1 | Local Model Optimization | PLANNED |
+| 6.1 | Local Model Optimization | COMPLETE |
+| 6.2 | Performance Monitoring | COMPLETE |
+| 6.3 | Resource Management | COMPLETE |
+| 7.1 | Session Persistence | PLANNED |
 
 ## Hardware Requirements
 
@@ -316,7 +319,7 @@ See `.env.example` for all available options.
 
 ## Testing
 
-**Current Result:** 1096/1096 tests passing
+**Current Result:** 1166/1166 tests passing
 
 ```powershell
 # Run all unit tests
