@@ -74,6 +74,12 @@ sessions/
 workspace/
 !workspace/.gitkeep
 
+# Browser (Playwright profiles, downloads)
+browser_profiles/
+browser_downloads/
+*.chromium
+*.playwright
+
 # Tests
 .pytest_cache/
 .coverage

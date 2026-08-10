@@ -36,7 +36,7 @@ class TestOSPermissions:
         assert "*" in OS_PERMISSION_SCOPES["os.system_info"]
         assert "*" in OS_PERMISSION_SCOPES["os.mouse"]
         assert "*" in OS_PERMISSION_SCOPES["os.keyboard"]
-        assert OS_PERMISSION_SCOPES["os.window"] == set()
+        assert "*" in OS_PERMISSION_SCOPES["os.window"]
 
     def test_register_os_permissions(self):
         pm = PermissionManager()
@@ -57,6 +57,7 @@ class TestOSPermissions:
         assert pm.has_permission("os.mouse", "os_control")
         assert pm.has_permission("os.mouse", "workspace")
         assert not pm.has_permission("os.keyboard", "os_control")
+        assert not pm.has_permission("os.window", "os_control")
 
     def test_register_os_permissions_keyboard_enabled(self):
         pm = PermissionManager()
@@ -65,6 +66,16 @@ class TestOSPermissions:
         assert pm.has_permission("os.keyboard", "os_control")
         assert pm.has_permission("os.keyboard", "workspace")
         assert not pm.has_permission("os.mouse", "os_control")
+        assert not pm.has_permission("os.window", "os_control")
+
+    def test_register_os_permissions_window_enabled(self):
+        pm = PermissionManager()
+        register_os_permissions(pm, window_enabled=True)
+
+        assert pm.has_permission("os.window", "os_control")
+        assert pm.has_permission("os.window", "workspace")
+        assert not pm.has_permission("os.mouse", "os_control")
+        assert not pm.has_permission("os.keyboard", "os_control")
 
     def test_register_os_permissions_both_enabled(self):
         pm = PermissionManager()
@@ -77,13 +88,13 @@ class TestOSPermissions:
 
     def test_os_confirmation_levels(self):
         pm = PermissionManager()
-        register_os_permissions(pm)
+        register_os_permissions(pm, window_enabled=True)
 
         assert pm.get_confirmation_level("os.screen_capture") == ConfirmationLevel.ALLOW
         assert pm.get_confirmation_level("os.system_info") == ConfirmationLevel.ALLOW
         assert pm.get_confirmation_level("os.mouse") == ConfirmationLevel.REQUIRE_CONFIRMATION
         assert pm.get_confirmation_level("os.keyboard") == ConfirmationLevel.REQUIRE_CONFIRMATION
-        assert pm.get_confirmation_level("os.window") == ConfirmationLevel.DENY
+        assert pm.get_confirmation_level("os.window") == ConfirmationLevel.ALLOW
 
 
 class TestScreenCaptureTool:
@@ -512,6 +523,88 @@ class TestWindowTool:
         tool = WindowTool()
         assert "os.window" in tool.required_permissions
 
+    def test_enabled_confirmation_level(self):
+        tool = WindowTool(enabled=True)
+        assert tool.confirmation_level == ConfirmationLevel.ALLOW
+
+    def test_enabled_validate_list(self):
+        tool = WindowTool(enabled=True)
+        ok, errors = tool.validate({"action": "list"})
+        assert ok is True
+
+    def test_enabled_validate_get_active(self):
+        tool = WindowTool(enabled=True)
+        ok, errors = tool.validate({"action": "get_active"})
+        assert ok is True
+
+    def test_enabled_validate_invalid_action(self):
+        tool = WindowTool(enabled=True)
+        ok, errors = tool.validate({"action": "invalid"})
+        assert ok is False
+
+    def test_enabled_execute_list(self):
+        tool = WindowTool(enabled=True)
+        result = tool.execute({"action": "list"})
+        assert result.success is True
+        assert "windows" in result.metadata
+        assert "count" in result.metadata
+
+    def test_enabled_execute_get_active(self):
+        tool = WindowTool(enabled=True)
+        result = tool.execute({"action": "get_active"})
+        assert result.success is True
+
+    def test_list_returns_windows_array(self):
+        tool = WindowTool(enabled=True)
+        result = tool.execute({"action": "list"})
+        assert result.success is True
+        assert isinstance(result.metadata["windows"], list)
+
+    def test_list_filter_title(self):
+        tool = WindowTool(enabled=True)
+        result = tool.execute({"action": "list", "filter_title": "nonexistent"})
+        assert result.success is True
+        assert result.metadata["count"] == 0
+
+    def test_window_info_structure(self):
+        from agent.os_control.windows import WindowInfo
+        info = WindowInfo(
+            hwnd=123,
+            title="Test",
+            class_name="TestClass",
+            pid=456,
+            visible=True,
+            minimized=False,
+            maximized=False,
+            rect={"x": 0, "y": 0, "width": 100, "height": 100},
+        )
+        d = info.to_dict()
+        assert d["hwnd"] == 123
+        assert d["title"] == "Test"
+        assert d["visible"] is True
+
+    def test_window_info_to_dict(self):
+        from agent.os_control.windows import WindowInfo
+        info = WindowInfo(
+            hwnd=123,
+            title="Test",
+            class_name="TestClass",
+            pid=456,
+            visible=True,
+            minimized=False,
+            maximized=False,
+            rect={"x": 0, "y": 0, "width": 100, "height": 100},
+        )
+        d = info.to_dict()
+        assert "hwnd" in d
+        assert "title" in d
+        assert "class_name" in d
+        assert "pid" in d
+        assert "visible" in d
+        assert "minimized" in d
+        assert "maximized" in d
+        assert "rect" in d
+
 
 class TestOSToolRegistry:
     def test_register_all_os_tools(self):
@@ -856,3 +949,526 @@ class TestOSControlConfig:
         assert config.mouse_action_timeout == 5.0
         assert config.keyboard_action_timeout == 5.0
         assert config.max_scroll_amount == 10
+
+
+class TestWindowToolControl:
+    def test_window_tool_all_actions(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        expected = {"list", "get_active", "activate", "minimize", "restore", "maximize",
+                    "close", "move", "resize", "set_bounds"}
+        assert set(tool.input_schema["properties"]["action"]["enum"]) == expected
+
+    def test_window_tool_disabled_control(self):
+        tool = WindowTool(enabled=True, control_enabled=False)
+        assert tool.confirmation_level == ConfirmationLevel.ALLOW
+
+    def test_window_tool_enabled_control(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        assert tool.confirmation_level == ConfirmationLevel.REQUIRE_CONFIRMATION
+
+    def test_window_tool_validate_activate_requires_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        ok, errors = tool.validate({"action": "activate"})
+        assert ok is False
+        assert "hwnd" in errors[0].lower()
+
+    def test_window_tool_validate_activate_with_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        ok, errors = tool.validate({"action": "activate", "hwnd": 12345})
+        assert ok is True
+
+    def test_window_tool_validate_minimize_requires_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        ok, errors = tool.validate({"action": "minimize"})
+        assert ok is False
+        assert "hwnd" in errors[0].lower()
+
+    def test_window_tool_validate_restore_requires_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        ok, errors = tool.validate({"action": "restore"})
+        assert ok is False
+        assert "hwnd" in errors[0].lower()
+
+    def test_window_tool_validate_maximize_requires_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        ok, errors = tool.validate({"action": "maximize"})
+        assert ok is False
+        assert "hwnd" in errors[0].lower()
+
+    def test_window_tool_validate_invalid_hwnd_negative(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        ok, errors = tool.validate({"action": "activate", "hwnd": -1})
+        assert ok is False
+        assert "invalid" in errors[0].lower()
+
+    def test_window_tool_validate_invalid_hwnd_zero(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        ok, errors = tool.validate({"action": "activate", "hwnd": 0})
+        assert ok is False
+        assert "invalid" in errors[0].lower()
+
+    def test_window_tool_validate_invalid_hwnd_type(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        ok, errors = tool.validate({"action": "activate", "hwnd": "invalid"})
+        assert ok is False
+        assert "integer" in errors[0].lower()
+
+    def test_window_tool_validate_mutation_disabled(self):
+        tool = WindowTool(enabled=True, control_enabled=False)
+        ok, errors = tool.validate({"action": "activate", "hwnd": 12345})
+        assert ok is False
+        assert "not enabled" in errors[0].lower()
+
+    def test_window_tool_execute_activate_invalid_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "activate", "hwnd": 99999999, "confirmed": True})
+        assert result.success is False
+        assert "invalid" in result.error.lower() or "does not reference" in result.error.lower()
+
+    def test_window_tool_execute_minimize_invalid_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "minimize", "hwnd": 99999999, "confirmed": True})
+        assert result.success is False
+
+    def test_window_tool_execute_restore_invalid_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "restore", "hwnd": 99999999, "confirmed": True})
+        assert result.success is False
+
+    def test_window_tool_execute_maximize_invalid_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "maximize", "hwnd": 99999999, "confirmed": True})
+        assert result.success is False
+
+    def test_window_tool_activate_returns_metadata(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "list"})
+        assert result.success is True
+        windows = result.metadata.get("windows", [])
+        if windows:
+            hwnd = windows[0]["hwnd"]
+            activate_result = tool.execute({"action": "activate", "hwnd": hwnd, "confirmed": True})
+            assert activate_result.success is True
+            assert "action" in activate_result.metadata
+            assert activate_result.metadata["action"] == "activate"
+            assert "window" in activate_result.metadata
+
+    def test_window_tool_minimize_returns_metadata(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "list"})
+        assert result.success is True
+        windows = result.metadata.get("windows", [])
+        if windows:
+            hwnd = windows[0]["hwnd"]
+            minimize_result = tool.execute({"action": "minimize", "hwnd": hwnd, "confirmed": True})
+            assert minimize_result.success is True
+            assert minimize_result.metadata["action"] == "minimize"
+            assert "window" in minimize_result.metadata
+            tool.execute({"action": "restore", "hwnd": hwnd, "confirmed": True})
+
+    def test_window_tool_restore_returns_metadata(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "list"})
+        assert result.success is True
+        windows = result.metadata.get("windows", [])
+        if windows:
+            hwnd = windows[0]["hwnd"]
+            tool.execute({"action": "minimize", "hwnd": hwnd, "confirmed": True})
+            restore_result = tool.execute({"action": "restore", "hwnd": hwnd, "confirmed": True})
+            assert restore_result.success is True
+            assert restore_result.metadata["action"] == "restore"
+            assert "window" in restore_result.metadata
+
+    def test_window_tool_maximize_returns_metadata(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "list"})
+        assert result.success is True
+        windows = result.metadata.get("windows", [])
+        if windows:
+            hwnd = windows[0]["hwnd"]
+            maximize_result = tool.execute({"action": "maximize", "hwnd": hwnd, "confirmed": True})
+            assert maximize_result.success is True
+            assert maximize_result.metadata["action"] == "maximize"
+            assert "window" in maximize_result.metadata
+            tool.execute({"action": "restore", "hwnd": hwnd, "confirmed": True})
+
+    def test_window_tool_results_are_json_serializable(self):
+        import json
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "list"})
+        assert result.success is True
+        json_str = json.dumps(result.to_dict())
+        assert len(json_str) > 0
+
+    def test_window_tool_mutation_results_are_json_serializable(self):
+        import json
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "list"})
+        windows = result.metadata.get("windows", [])
+        if windows:
+            hwnd = windows[0]["hwnd"]
+            activate_result = tool.execute({"action": "activate", "hwnd": hwnd, "confirmed": True})
+            json_str = json.dumps(activate_result.to_dict())
+            assert len(json_str) > 0
+
+    def test_window_tool_description(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        assert "control" in tool.description.lower() or "activate" in tool.description.lower()
+
+    def test_window_tool_output_schema(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        schema = tool.output_schema
+        assert "window" in schema["properties"]
+        assert "action" in schema["properties"]
+
+    def test_window_tool_window_info_to_dict(self):
+        from agent.os_control.windows import WindowInfo
+        info = WindowInfo(
+            hwnd=123,
+            title="Test",
+            class_name="TestClass",
+            pid=456,
+            visible=True,
+            minimized=False,
+            maximized=False,
+            rect={"x": 0, "y": 0, "width": 100, "height": 100},
+        )
+        d = info.to_dict()
+        assert d["hwnd"] == 123
+        assert d["minimized"] is False
+        assert d["maximized"] is False
+
+    def test_window_tool_mutation_rejected_without_confirmation(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "activate", "hwnd": 12345})
+        assert result.success is False
+        assert "confirm" in result.error.lower()
+
+    def test_window_tool_mutation_accepted_with_confirmation(self):
+        tool = WindowTool(enabled=True, control_enabled=True)
+        result = tool.execute({"action": "activate", "hwnd": 99999999, "confirmed": True})
+        assert result.success is False
+        assert "does not reference" in result.error.lower()
+
+
+class TestWindowToolRouterIntegration:
+    def test_window_list_through_router(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            registry = ToolRegistry()
+            pm = PermissionManager()
+            register_os_permissions(pm, window_enabled=True)
+            al = AuditLogger(log_dir=tmpdir)
+            registry.register(WindowTool(enabled=True, control_enabled=False))
+            router = ToolRouter(
+                registry=registry,
+                permission_manager=pm,
+                audit_logger=al,
+            )
+            result = router.execute_tool("window", {"action": "list"})
+            assert result.success is True
+
+    def test_window_mutation_requires_confirmation(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            registry = ToolRegistry()
+            pm = PermissionManager()
+            register_os_permissions(pm, window_enabled=True)
+            al = AuditLogger(log_dir=tmpdir)
+            tool = WindowTool(enabled=True, control_enabled=True)
+            registry.register(tool)
+            router = ToolRouter(
+                registry=registry,
+                permission_manager=pm,
+                audit_logger=al,
+            )
+            result = router.execute_tool("window", {"action": "activate", "hwnd": 12345})
+            assert result.success is False
+            assert "confirm" in result.error.lower()
+
+    def test_window_mutation_blocked_when_disabled(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            registry = ToolRegistry()
+            pm = PermissionManager()
+            register_os_permissions(pm, window_enabled=False)
+            al = AuditLogger(log_dir=tmpdir)
+            registry.register(WindowTool(enabled=False, control_enabled=False))
+            router = ToolRouter(
+                registry=registry,
+                permission_manager=pm,
+                audit_logger=al,
+            )
+            result = router.execute_tool("window", {"action": "activate", "hwnd": 12345})
+            assert result.success is False
+
+    def test_window_tool_in_registry(self):
+        registry = ToolRegistry()
+        tool = WindowTool(enabled=True, control_enabled=True)
+        registry.register(tool)
+        assert "window" in registry.list_names()
+
+    def test_window_tool_audit_logged(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            registry = ToolRegistry()
+            pm = PermissionManager()
+            register_os_permissions(pm, window_enabled=True)
+            al = AuditLogger(log_dir=tmpdir)
+            registry.register(WindowTool(enabled=True, control_enabled=False))
+            router = ToolRouter(
+                registry=registry,
+                permission_manager=pm,
+                audit_logger=al,
+            )
+            router.execute_tool("window", {"action": "list"})
+            logs = al.get_recent_records(10)
+            window_logs = [l for l in logs if l.get("tool_name") == "window"]
+            assert len(window_logs) >= 1
+
+
+class TestWindowToolClose:
+    def test_close_requires_confirmation(self):
+        tool = WindowTool(enabled=True, control_enabled=True, close_enabled=True)
+        result = tool.execute({"action": "close", "hwnd": 12345})
+        assert result.success is False
+        assert "confirm" in result.error.lower()
+
+    def test_close_denied_when_disabled(self):
+        tool = WindowTool(enabled=True, control_enabled=True, close_enabled=False)
+        ok, errors = tool.validate({"action": "close", "hwnd": 12345})
+        assert ok is False
+        assert "not enabled" in errors[0].lower()
+
+    def test_close_invalid_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True, close_enabled=True)
+        result = tool.execute({"action": "close", "hwnd": 99999999, "confirmed": True})
+        assert result.success is False
+
+    def test_close_nonexistent_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True, close_enabled=True)
+        result = tool.execute({"action": "close", "hwnd": 0, "confirmed": True})
+        assert result.success is False
+
+    def test_close_result_json_serializable(self):
+        import json
+        tool = WindowTool(enabled=True, control_enabled=True, close_enabled=True)
+        result = tool.execute({"action": "close", "hwnd": 99999999, "confirmed": True})
+        json_str = json.dumps(result.to_dict())
+        assert len(json_str) > 0
+
+
+class TestWindowToolMove:
+    def test_move_requires_confirmation(self):
+        tool = WindowTool(enabled=True, control_enabled=True, move_enabled=True)
+        result = tool.execute({"action": "move", "hwnd": 12345, "x": 100, "y": 100})
+        assert result.success is False
+        assert "confirm" in result.error.lower()
+
+    def test_move_denied_when_disabled(self):
+        tool = WindowTool(enabled=True, control_enabled=True, move_enabled=False)
+        ok, errors = tool.validate({"action": "move", "hwnd": 12345, "x": 100, "y": 100})
+        assert ok is False
+        assert "not enabled" in errors[0].lower()
+
+    def test_move_requires_coordinates(self):
+        tool = WindowTool(enabled=True, control_enabled=True, move_enabled=True)
+        ok, errors = tool.validate({"action": "move", "hwnd": 12345})
+        assert ok is False
+        assert "coordinates" in errors[0].lower()
+
+    def test_move_invalid_coordinates_type(self):
+        tool = WindowTool(enabled=True, control_enabled=True, move_enabled=True)
+        ok, errors = tool.validate({"action": "move", "hwnd": 12345, "x": "abc", "y": 100})
+        assert ok is False
+        assert "integers" in errors[0].lower()
+
+    def test_move_invalid_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True, move_enabled=True)
+        result = tool.execute({"action": "move", "hwnd": 99999999, "x": 100, "y": 100, "confirmed": True})
+        assert result.success is False
+
+    def test_move_result_json_serializable(self):
+        import json
+        tool = WindowTool(enabled=True, control_enabled=True, move_enabled=True)
+        result = tool.execute({"action": "move", "hwnd": 99999999, "x": 100, "y": 100, "confirmed": True})
+        json_str = json.dumps(result.to_dict())
+        assert len(json_str) > 0
+
+
+class TestWindowToolResize:
+    def test_resize_requires_confirmation(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True)
+        result = tool.execute({"action": "resize", "hwnd": 12345, "width": 800, "height": 600})
+        assert result.success is False
+        assert "confirm" in result.error.lower()
+
+    def test_resize_denied_when_disabled(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=False)
+        ok, errors = tool.validate({"action": "resize", "hwnd": 12345, "width": 800, "height": 600})
+        assert ok is False
+        assert "not enabled" in errors[0].lower()
+
+    def test_resize_requires_dimensions(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True)
+        ok, errors = tool.validate({"action": "resize", "hwnd": 12345})
+        assert ok is False
+        assert "dimensions" in errors[0].lower()
+
+    def test_resize_invalid_dimensions_type(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True)
+        ok, errors = tool.validate({"action": "resize", "hwnd": 12345, "width": "abc", "height": 600})
+        assert ok is False
+        assert "integers" in errors[0].lower()
+
+    def test_resize_below_minimum(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True,
+                         min_width=100, min_height=100)
+        ok, errors = tool.validate({"action": "resize", "hwnd": 12345, "width": 50, "height": 50})
+        assert ok is False
+        assert "at least" in errors[0].lower()
+
+    def test_resize_above_maximum(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True,
+                         max_width=1920, max_height=1080)
+        ok, errors = tool.validate({"action": "resize", "hwnd": 12345, "width": 5000, "height": 5000})
+        assert ok is False
+        assert "at most" in errors[0].lower()
+
+    def test_resize_invalid_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True)
+        result = tool.execute({"action": "resize", "hwnd": 99999999, "width": 800, "height": 600, "confirmed": True})
+        assert result.success is False
+
+    def test_resize_result_json_serializable(self):
+        import json
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True)
+        result = tool.execute({"action": "resize", "hwnd": 99999999, "width": 800, "height": 600, "confirmed": True})
+        json_str = json.dumps(result.to_dict())
+        assert len(json_str) > 0
+
+
+class TestWindowToolSetBounds:
+    def test_set_bounds_requires_confirmation(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True)
+        result = tool.execute({
+            "action": "set_bounds", "hwnd": 12345,
+            "x": 100, "y": 100, "width": 800, "height": 600
+        })
+        assert result.success is False
+        assert "confirm" in result.error.lower()
+
+    def test_set_bounds_requires_all_args(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True)
+        ok, errors = tool.validate({"action": "set_bounds", "hwnd": 12345, "x": 100, "y": 100})
+        assert ok is False
+        assert "dimensions" in errors[0].lower()
+
+    def test_set_bounds_requires_position(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True)
+        ok, errors = tool.validate({"action": "set_bounds", "hwnd": 12345, "width": 800, "height": 600})
+        assert ok is False
+        assert "coordinates" in errors[0].lower()
+
+    def test_set_bounds_invalid_hwnd(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True)
+        result = tool.execute({
+            "action": "set_bounds", "hwnd": 99999999,
+            "x": 100, "y": 100, "width": 800, "height": 600, "confirmed": True
+        })
+        assert result.success is False
+
+    def test_set_bounds_result_json_serializable(self):
+        import json
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=True)
+        result = tool.execute({
+            "action": "set_bounds", "hwnd": 99999999,
+            "x": 100, "y": 100, "width": 800, "height": 600, "confirmed": True
+        })
+        json_str = json.dumps(result.to_dict())
+        assert len(json_str) > 0
+
+
+class TestWindowToolProtectedWindows:
+    def test_protected_window_detection(self):
+        from agent.os_control.windows import _is_protected_window
+        assert _is_protected_window(0) is False
+
+    def test_tool_rejects_protected_window(self):
+        tool = WindowTool(enabled=True, control_enabled=True, close_enabled=True)
+        desktop_hwnd = user32.GetDesktopWindow()
+        result = tool.execute({"action": "close", "hwnd": desktop_hwnd, "confirmed": True})
+        assert result.success is False
+        assert "protected" in result.error.lower()
+
+
+class TestWindowToolConfig:
+    def test_config_has_window_settings(self):
+        from agent.core.config import Config
+        config = Config()
+        assert hasattr(config, "window_close_enabled")
+        assert hasattr(config, "window_move_enabled")
+        assert hasattr(config, "window_resize_enabled")
+        assert hasattr(config, "min_window_width")
+        assert hasattr(config, "min_window_height")
+        assert hasattr(config, "max_window_width")
+        assert hasattr(config, "max_window_height")
+
+    def test_config_window_defaults(self):
+        from agent.core.config import Config
+        config = Config()
+        assert config.window_close_enabled is False
+        assert config.window_move_enabled is False
+        assert config.window_resize_enabled is False
+        assert config.min_window_width == 100
+        assert config.min_window_height == 100
+        assert config.max_window_width == 4096
+        assert config.max_window_height == 4096
+
+
+class TestWindowToolAllActions:
+    def test_all_actions_in_schema(self):
+        tool = WindowTool(enabled=True, control_enabled=True, close_enabled=True,
+                         move_enabled=True, resize_enabled=True)
+        expected = {"list", "get_active", "activate", "minimize", "restore", "maximize",
+                    "close", "move", "resize", "set_bounds"}
+        assert set(tool.input_schema["properties"]["action"]["enum"]) == expected
+
+    def test_read_only_actions_always_available(self):
+        tool = WindowTool(enabled=True, control_enabled=False)
+        result = tool.execute({"action": "list"})
+        assert result.success is True
+
+    def test_mutation_requires_control_enabled(self):
+        tool = WindowTool(enabled=True, control_enabled=False)
+        ok, errors = tool.validate({"action": "activate", "hwnd": 12345})
+        assert ok is False
+
+    def test_close_requires_close_enabled(self):
+        tool = WindowTool(enabled=True, control_enabled=True, close_enabled=False)
+        ok, errors = tool.validate({"action": "close", "hwnd": 12345})
+        assert ok is False
+
+    def test_move_requires_move_enabled(self):
+        tool = WindowTool(enabled=True, control_enabled=True, move_enabled=False)
+        ok, errors = tool.validate({"action": "move", "hwnd": 12345, "x": 100, "y": 100})
+        assert ok is False
+
+    def test_resize_requires_resize_enabled(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=False)
+        ok, errors = tool.validate({"action": "resize", "hwnd": 12345, "width": 800, "height": 600})
+        assert ok is False
+
+    def test_set_bounds_requires_resize_enabled(self):
+        tool = WindowTool(enabled=True, control_enabled=True, resize_enabled=False)
+        ok, errors = tool.validate({
+            "action": "set_bounds", "hwnd": 12345,
+            "x": 100, "y": 100, "width": 800, "height": 600
+        })
+        assert ok is False
+
+    def test_disabled_tool_rejects_all(self):
+        tool = WindowTool(enabled=False)
+        ok, errors = tool.validate({})
+        assert ok is False
+        assert "not enabled" in errors[0].lower()
+
+
+import ctypes
+user32 = ctypes.windll.user32

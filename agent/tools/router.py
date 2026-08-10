@@ -84,7 +84,7 @@ class ToolRouter:
             return ToolResult(
                 success=False,
                 tool_name=request.tool,
-                error="Operation requires confirmation",
+                error="Operation requires confirmation but is denied",
             )
 
         record = self.audit.log_request(

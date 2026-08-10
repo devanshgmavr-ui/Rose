@@ -8,7 +8,7 @@ OS_PERMISSIONS = {
     "os.system_info": ConfirmationLevel.ALLOW,
     "os.mouse": ConfirmationLevel.REQUIRE_CONFIRMATION,
     "os.keyboard": ConfirmationLevel.REQUIRE_CONFIRMATION,
-    "os.window": ConfirmationLevel.DENY,
+    "os.window": ConfirmationLevel.ALLOW,
 }
 
 OS_PERMISSION_SCOPES = {
@@ -16,15 +16,22 @@ OS_PERMISSION_SCOPES = {
     "os.system_info": {"*"},
     "os.mouse": {"*"},
     "os.keyboard": {"*"},
-    "os.window": set(),
+    "os.window": {"*"},
 }
 
 
-def register_os_permissions(permission_manager, mouse_enabled: bool = False, keyboard_enabled: bool = False) -> None:
+def register_os_permissions(
+    permission_manager,
+    mouse_enabled: bool = False,
+    keyboard_enabled: bool = False,
+    window_enabled: bool = False,
+) -> None:
     for perm, scopes in OS_PERMISSION_SCOPES.items():
         if perm == "os.mouse" and not mouse_enabled:
             continue
         if perm == "os.keyboard" and not keyboard_enabled:
+            continue
+        if perm == "os.window" and not window_enabled:
             continue
         for scope in scopes:
             permission_manager.grant_permission(perm, scope)

@@ -64,6 +64,13 @@ from ..os_control import (
     WindowTool,
     register_os_permissions,
 )
+from ..browser import (
+    BrowserManager,
+    BrowserSessionTool,
+    BrowserNavigationTool,
+    BrowserPageReadTool,
+    register_browser_permissions,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +129,12 @@ class Agent:
         self._mouse_tool: Optional[MouseTool] = None
         self._keyboard_tool: Optional[KeyboardTool] = None
         self._window_tool: Optional[WindowTool] = None
+        
+        # Browser system components
+        self._browser_manager: Optional[BrowserManager] = None
+        self._browser_session_tool: Optional[BrowserSessionTool] = None
+        self._browser_navigation_tool: Optional[BrowserNavigationTool] = None
+        self._browser_page_read_tool: Optional[BrowserPageReadTool] = None
         
         logger.info(f"Agent initialized: {self.config.project_name} v{self.config.version}")
     
@@ -201,6 +214,7 @@ class Agent:
         
         self._init_media_system()
         self._init_os_control_system()
+        self._init_browser_system()
         
         self._tool_router = ToolRouter(
             registry=self._tool_registry,
@@ -253,6 +267,7 @@ class Agent:
             self._permission_manager,
             mouse_enabled=self.config.mouse_control_enabled,
             keyboard_enabled=self.config.keyboard_control_enabled,
+            window_enabled=self.config.window_control_enabled,
         )
         
         if self.config.screen_capture_enabled:
@@ -265,12 +280,73 @@ class Agent:
         
         self._mouse_tool = MouseTool(enabled=self.config.mouse_control_enabled)
         self._keyboard_tool = KeyboardTool(enabled=self.config.keyboard_control_enabled)
-        self._window_tool = WindowTool()
+        self._window_tool = WindowTool(
+            enabled=self.config.window_control_enabled,
+            control_enabled=self.config.window_control_enabled,
+            close_enabled=self.config.window_close_enabled,
+            move_enabled=self.config.window_move_enabled,
+            resize_enabled=self.config.window_resize_enabled,
+            min_width=self.config.min_window_width,
+            min_height=self.config.min_window_height,
+            max_width=self.config.max_window_width,
+            max_height=self.config.max_window_height,
+        )
         self._tool_registry.register(self._mouse_tool)
         self._tool_registry.register(self._keyboard_tool)
         self._tool_registry.register(self._window_tool)
         
         logger.info("OS control system initialized")
+    
+    def _init_browser_system(self):
+        """Initialize the browser automation system."""
+        logger.info("Initializing browser system...")
+        
+        if not self.config.browser_automation_enabled:
+            logger.info("Browser system is disabled by configuration")
+            self._browser_manager = BrowserManager(
+                headless=self.config.browser_headless,
+                max_sessions=self.config.browser_max_sessions,
+                max_tabs=self.config.browser_max_tabs,
+            )
+            return
+        
+        register_browser_permissions(
+            self._permission_manager,
+            browser_enabled=self.config.browser_automation_enabled,
+        )
+        
+        self._browser_manager = BrowserManager(
+            headless=self.config.browser_headless,
+            max_sessions=self.config.browser_max_sessions,
+            max_tabs=self.config.browser_max_tabs,
+            navigation_timeout=self.config.browser_navigation_timeout,
+            action_timeout=self.config.browser_action_timeout,
+        )
+        
+        if not self._browser_manager.initialize():
+            logger.warning("Browser manager failed to initialize")
+        
+        self._browser_session_tool = BrowserSessionTool(
+            browser_manager=self._browser_manager,
+            browser_enabled=self.config.browser_automation_enabled,
+        )
+        self._tool_registry.register(self._browser_session_tool)
+        
+        self._browser_navigation_tool = BrowserNavigationTool(
+            browser_manager=self._browser_manager,
+            browser_enabled=self.config.browser_automation_enabled,
+        )
+        self._tool_registry.register(self._browser_navigation_tool)
+        
+        self._browser_page_read_tool = BrowserPageReadTool(
+            browser_manager=self._browser_manager,
+            browser_enabled=self.config.browser_automation_enabled,
+            max_page_text_chars=self.config.browser_max_page_text_chars,
+            max_page_text_tokens=self.config.browser_max_page_text_tokens,
+        )
+        self._tool_registry.register(self._browser_page_read_tool)
+        
+        logger.info("Browser system initialized")
     
     def _init_orchestration(self):
         """Initialize the orchestration system."""
@@ -725,7 +801,15 @@ class Agent:
                 "system_info": "PASS" if self._system_info_tool else "DISABLED",
                 "mouse": "ENABLED" if self.config.mouse_control_enabled else "DISABLED",
                 "keyboard": "ENABLED" if self.config.keyboard_control_enabled else "DISABLED",
-                "window": "DISABLED",
+                "window": "ENABLED" if self.config.window_control_enabled else "DISABLED",
+                "window_control": "ENABLED" if self.config.window_control_enabled else "DISABLED",
+            },
+            "browser": {
+                "enabled": self.config.browser_automation_enabled,
+                "headless": self.config.browser_headless,
+                "max_sessions": self.config.browser_max_sessions,
+                "initialized": self._browser_manager is not None and self._browser_manager.initialized,
+                "page_read": "ENABLED" if self.config.browser_automation_enabled else "DISABLED",
             },
         }
         
@@ -796,6 +880,13 @@ class Agent:
         self._mouse_tool = None
         self._keyboard_tool = None
         self._window_tool = None
+        
+        if self._browser_manager:
+            self._browser_manager.shutdown()
+        self._browser_manager = None
+        self._browser_session_tool = None
+        self._browser_navigation_tool = None
+        self._browser_page_read_tool = None
         
         logger.info("Agent shutdown complete")
     

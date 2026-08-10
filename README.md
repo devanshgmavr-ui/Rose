@@ -18,9 +18,11 @@ The project is being developed incrementally through staged milestones, with eac
 - Multimodal media architecture
 - Screen capture and system information
 - Mouse and keyboard control
+- Window management (enumerate, activate, minimize, restore, maximize, close, move, resize)
+- Browser foundation (Playwright session management, isolated contexts)
+- Browser page reading (extract text content from pages with security wrapping)
 
 **Planned Capabilities (In Development):**
-- Window management and GUI automation
 - Browser automation
 - Image understanding and vision analysis
 - Image generation
@@ -60,10 +62,12 @@ Tools
   +---> System Info
   +---> Mouse Control
   +---> Keyboard Control
+  +---> Window Management
+  +---> Browser Session Management
   +---> Media (vision/image/video)
   |
   v
-Windows / Filesystem / Sandbox
+Windows / Filesystem / Browser / Sandbox
 ```
 
 ### Components
@@ -75,7 +79,8 @@ Windows / Filesystem / Sandbox
 | **Tools** | Permission-based tool system with audit logging |
 | **Orchestration** | Task planning, execution, verification, and persistence |
 | **Media** | Multimodal providers for vision, image, and video |
-| **OS Control** | Screen capture, system info, mouse, keyboard |
+| **OS Control** | Screen capture, system info, mouse, keyboard, window management |
+| **Browser** | Playwright-based browser session management (disabled by default) |
 
 ## Current Status
 
@@ -88,8 +93,14 @@ Windows / Filesystem / Sandbox
 | 1.5 | Media Architecture | COMPLETE |
 | 2.1 | Screen Capture & System Information | COMPLETE |
 | 2.2 | Mouse & Keyboard Control | COMPLETE |
-| 2.3 | Window Management | PLANNED |
-| 2.4 | Browser Automation | PLANNED |
+| 2.3.1 | Window Architecture & Research | COMPLETE |
+| 2.3.2 | Window Enumeration | COMPLETE |
+| 2.3.3 | Window Control Foundation | COMPLETE |
+| 2.3.4 | Advanced Window Operations | COMPLETE |
+| 2.4.1 | Browser Foundation / Session Management | COMPLETE |
+| 2.4.2 | Browser Navigation | COMPLETE |
+| 2.4.3 | Browser Page Reading | COMPLETE |
+| 2.4 | Browser Automation | IN PROGRESS |
 | 3.1 | Vision Analysis | PLANNED |
 | 3.2 | Image Generation | PLANNED |
 | 3.3 | Video Generation | PLANNED |
@@ -219,6 +230,9 @@ See `.env.example` for all available options.
 | `os.system_info` | ALLOW | No |
 | `os.mouse` | REQUIRE_CONFIRMATION | Yes |
 | `os.keyboard` | REQUIRE_CONFIRMATION | Yes |
+| `os.window` | ALLOW | No (mutations require confirmation) |
+| `browser.session` | DENIED | Yes (requires browser enabled) |
+| `browser.navigation` | DENIED | Yes (requires browser enabled) |
 
 ### Safety Features
 
@@ -226,8 +240,23 @@ See `.env.example` for all available options.
 - **Sandbox execution:** Python code runs in subprocess (not kernel-isolated)
 - **CLI disabled:** Command execution blocked by default
 - **Mouse/keyboard disabled:** Must be explicitly enabled
+- **Window control disabled:** Must be explicitly enabled
+- **Window close disabled:** Must be explicitly enabled
+- **Window move disabled:** Must be explicitly enabled
+- **Window resize disabled:** Must be explicitly enabled
 - **Coordinate validation:** Actions validated against screen bounds
 - **Restricted shortcuts:** Dangerous key combinations blocked
+- **HWND validation:** Window handles validated before mutations
+- **Protected windows:** System-critical windows cannot be modified
+- **Confirmation required:** All window mutations require explicit confirmation
+- **Browser disabled:** Browser automation disabled by default
+- **Browser isolation:** Playwright contexts isolated from user profiles
+- **Browser session limit:** Maximum concurrent sessions enforced
+- **Browser page limit:** Maximum pages per session enforced
+- **Browser navigation:** HTTP/HTTPS only, unsupported schemes blocked
+- **Browser page reading:** Content treated as untrusted, wrapped with security markers
+- **URL sanitization:** Sensitive query parameters redacted in logs
+- **No browser profiles:** No access to user Chrome/Edge data
 - **Action limits:** Configurable limits per request
 - **Audit logging:** All tool calls logged
 
@@ -240,7 +269,7 @@ See `.env.example` for all available options.
 
 ## Testing
 
-**Current Result:** 370/370 tests passing
+**Current Result:** 609/609 tests passing (160 browser tests total)
 
 ```powershell
 # Run all unit tests
@@ -248,6 +277,9 @@ python -m pytest tests/unit/ -v
 
 # Run specific test suite
 python -m pytest tests/unit/test_os_control.py -v
+
+# Run browser tests
+python -m pytest tests/unit/test_browser.py -v
 ```
 
 ### Test Coverage
@@ -260,7 +292,8 @@ python -m pytest tests/unit/test_os_control.py -v
 | Tools | Registry, router, permissions, audit |
 | Orchestration | Planning, execution, verification |
 | Media | Storage, routing, providers |
-| OS Control | Screen, system, mouse, keyboard |
+| OS Control | Screen, system, mouse, keyboard, window |
+| Browser | Session management, navigation, page reading, URL validation, models, permissions, tools |
 
 ## Current Capabilities
 
@@ -273,6 +306,21 @@ The agent can:
 - Get system information (OS, CPU, memory, screen)
 - Move mouse and click (when enabled)
 - Type text and press keys (when enabled)
+- Enumerate and list windows
+- Get active window information
+- Activate (focus) a specific window
+- Minimize, restore, and maximize windows
+- Gracefully close windows (WM_CLOSE)
+- Move windows to new positions
+- Resize windows
+- Set window bounds (position + size)
+- Protected system window detection
+- Create isolated browser sessions (Playwright)
+- List active browser sessions
+- Close browser sessions
+- Navigate browser pages to HTTP/HTTPS URLs
+- URL scheme validation (HTTP/HTTPS only)
+- Sensitive URL parameter sanitization in logs
 - Execute Python code in sandbox
 - Read/write files in workspace
 - Store and retrieve media files
@@ -285,8 +333,17 @@ The agent can:
 - Python sandbox is subprocess-level, not kernel-isolated
 - OS automation is intentionally restricted
 - Mouse/keyboard disabled by default
-- Window management not yet implemented
-- Browser automation not yet implemented
+- Window control disabled by default
+- Window close/move/resize disabled by default
+- Window mutations require explicit confirmation
+- WM_CLOSE does not guarantee application termination
+- Protected system windows cannot be modified
+- No process management or termination
+- Browser automation disabled by default
+- Browser page reading is available (with security wrapping)
+- Browser interaction not yet implemented
+- Browser screenshots not yet implemented
+- No persistent browser profiles
 - 4K token context limit (VRAM constrained)
 - Single monitor support only
 
@@ -302,8 +359,15 @@ The agent can:
 ### Stage 2: OS Automation (IN PROGRESS)
 - 2.1 Screen/System Control (COMPLETE)
 - 2.2 Mouse/Keyboard Control (COMPLETE)
-- 2.3 Window Management (PLANNED)
-- 2.4 Browser Automation (PLANNED)
+- 2.3 Window Management (COMPLETE)
+  - 2.3.1 Window Architecture (COMPLETE)
+  - 2.3.2 Window Enumeration (COMPLETE)
+  - 2.3.3 Window Control Foundation (COMPLETE)
+  - 2.3.4 Advanced Window Operations (COMPLETE)
+- 2.4 Browser Automation (IN PROGRESS)
+  - 2.4.1 Browser Foundation / Session Management (COMPLETE)
+  - 2.4.2 Browser Navigation (COMPLETE)
+  - 2.4.3 Browser Page Reading (COMPLETE)
 
 ### Stage 3: Perception (PLANNED)
 - 3.1 Vision Analysis

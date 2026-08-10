@@ -78,6 +78,13 @@ class Config:
     mouse_control_enabled: bool = False
     keyboard_control_enabled: bool = False
     window_control_enabled: bool = False
+    window_close_enabled: bool = False
+    window_move_enabled: bool = False
+    window_resize_enabled: bool = False
+    min_window_width: int = 100
+    min_window_height: int = 100
+    max_window_width: int = 4096
+    max_window_height: int = 4096
     max_mouse_actions_per_request: int = 20
     max_keyboard_actions_per_request: int = 20
     max_typed_text_length: int = 1000
@@ -157,6 +164,16 @@ class Config:
         self.mouse_action_timeout = 5.0
         self.keyboard_action_timeout = 5.0
         self.max_scroll_amount = 10
+        
+        # Browser automation settings
+        self.browser_automation_enabled = False
+        self.browser_headless = True
+        self.browser_max_sessions = 2
+        self.browser_max_tabs = 5
+        self.browser_navigation_timeout = 30000
+        self.browser_action_timeout = 10000
+        self.browser_max_page_text_chars = 20000
+        self.browser_max_page_text_tokens = 5000
         
         # Set base directory
         if config_dir:
@@ -274,12 +291,29 @@ class Config:
         self.mouse_control_enabled = os.getenv("MOUSE_CONTROL_ENABLED", "false").lower() == "true"
         self.keyboard_control_enabled = os.getenv("KEYBOARD_CONTROL_ENABLED", "false").lower() == "true"
         self.window_control_enabled = os.getenv("WINDOW_CONTROL_ENABLED", "false").lower() == "true"
+        self.window_close_enabled = os.getenv("WINDOW_CLOSE_ENABLED", "false").lower() == "true"
+        self.window_move_enabled = os.getenv("WINDOW_MOVE_ENABLED", "false").lower() == "true"
+        self.window_resize_enabled = os.getenv("WINDOW_RESIZE_ENABLED", "false").lower() == "true"
+        self.min_window_width = int(os.getenv("MIN_WINDOW_WIDTH", str(self.min_window_width)))
+        self.min_window_height = int(os.getenv("MIN_WINDOW_HEIGHT", str(self.min_window_height)))
+        self.max_window_width = int(os.getenv("MAX_WINDOW_WIDTH", str(self.max_window_width)))
+        self.max_window_height = int(os.getenv("MAX_WINDOW_HEIGHT", str(self.max_window_height)))
         self.max_mouse_actions_per_request = int(os.getenv("MAX_MOUSE_ACTIONS_PER_REQUEST", str(self.max_mouse_actions_per_request)))
         self.max_keyboard_actions_per_request = int(os.getenv("MAX_KEYBOARD_ACTIONS_PER_REQUEST", str(self.max_keyboard_actions_per_request)))
         self.max_typed_text_length = int(os.getenv("MAX_TYPED_TEXT_LENGTH", str(self.max_typed_text_length)))
         self.mouse_action_timeout = float(os.getenv("MOUSE_ACTION_TIMEOUT", str(self.mouse_action_timeout)))
         self.keyboard_action_timeout = float(os.getenv("KEYBOARD_ACTION_TIMEOUT", str(self.keyboard_action_timeout)))
         self.max_scroll_amount = int(os.getenv("MAX_SCROLL_AMOUNT", str(self.max_scroll_amount)))
+        
+        # Browser automation settings
+        self.browser_automation_enabled = os.getenv("BROWSER_AUTOMATION_ENABLED", "false").lower() == "true"
+        self.browser_headless = os.getenv("BROWSER_HEADLESS", "true").lower() == "true"
+        self.browser_max_sessions = int(os.getenv("BROWSER_MAX_SESSIONS", str(self.browser_max_sessions)))
+        self.browser_max_tabs = int(os.getenv("BROWSER_MAX_TABS", str(self.browser_max_tabs)))
+        self.browser_navigation_timeout = int(os.getenv("BROWSER_NAVIGATION_TIMEOUT", str(self.browser_navigation_timeout)))
+        self.browser_action_timeout = int(os.getenv("BROWSER_ACTION_TIMEOUT", str(self.browser_action_timeout)))
+        self.browser_max_page_text_chars = int(os.getenv("BROWSER_MAX_PAGE_TEXT_CHARS", str(self.browser_max_page_text_chars)))
+        self.browser_max_page_text_tokens = int(os.getenv("BROWSER_MAX_PAGE_TEXT_TOKENS", str(self.browser_max_page_text_tokens)))
     
     def _ensure_directories(self):
         """Ensure all required directories exist."""
