@@ -138,8 +138,10 @@ Windows / Filesystem / Browser / Sandbox
 | 4.1 | Natural Language Tool Planning | COMPLETE |
 | 4.2 | Automatic Tool Selection | COMPLETE |
 | 4.3 | Multi-Step Autonomous Tasks | COMPLETE |
-| 5.1 | Controlled Application Launching | PLANNED |
-| 6.1 | Cloud Scaling | PLANNED |
+| 5.1 | Controlled Application Launching | COMPLETE |
+| 5.2 | Advanced File Automation | COMPLETE |
+| 5.3 | Controlled CLI Automation | COMPLETE |
+| 6.1 | Local Model Optimization | PLANNED |
 
 ## Hardware Requirements
 
@@ -314,7 +316,7 @@ See `.env.example` for all available options.
 
 ## Testing
 
-**Current Result:** 1009/1009 tests passing
+**Current Result:** 1096/1096 tests passing
 
 ```powershell
 # Run all unit tests
