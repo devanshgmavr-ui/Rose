@@ -50,6 +50,8 @@ from ..media import (
     LocalVisionProvider,
     VisionAnalyzer,
     VisionAnalyzeTool,
+    VisualGrounder,
+    VisualGroundingTool,
     register_vision_permissions,
     ImageGenProvider,
     VideoGenProvider,
@@ -281,6 +283,22 @@ class Agent:
                 workspace_dir="workspace",
             )
             self._tool_registry.register(self._vision_analyze_tool)
+            
+            self._visual_grounder = VisualGrounder(
+                screen_width=self.config.max_screenshot_width,
+                screen_height=self.config.max_screenshot_height,
+            )
+            
+            self._visual_grounding_tool = VisualGroundingTool(
+                vision_analyzer=self._vision_analyzer,
+                visual_grounder=self._visual_grounder,
+                media_storage=self._media_storage,
+                vision_enabled=self.config.vision_enabled,
+                grounding_enabled=self.config.vision_enabled,
+                screen_width=self.config.max_screenshot_width,
+                screen_height=self.config.max_screenshot_height,
+            )
+            self._tool_registry.register(self._visual_grounding_tool)
         
         image_analyze_tool = ImageAnalyzeTool(self._media_router)
         image_generate_tool = ImageGenerateTool(self._media_router)
@@ -944,6 +962,8 @@ class Agent:
         self._vision_provider = None
         self._vision_analyzer = None
         self._vision_analyze_tool = None
+        self._visual_grounder = None
+        self._visual_grounding_tool = None
         self._image_gen_provider = None
         self._video_gen_provider = None
         self._screen_capture_tool = None

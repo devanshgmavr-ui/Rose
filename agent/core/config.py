@@ -199,6 +199,10 @@ class Config:
         self.vision_max_elements = 100
         self.vision_analysis_timeout = 30000
         
+        # Grounding settings
+        self.grounding_confidence_threshold = 0.3
+        self.grounding_stale_timeout = 30.0
+        
         # Set base directory
         if config_dir:
             self.base_dir = config_dir
@@ -362,6 +366,10 @@ class Config:
         self.vision_max_image_height = int(os.getenv("VISION_MAX_IMAGE_HEIGHT", str(self.vision_max_image_height)))
         self.vision_max_elements = int(os.getenv("VISION_MAX_ELEMENTS", str(self.vision_max_elements)))
         self.vision_analysis_timeout = int(os.getenv("VISION_ANALYSIS_TIMEOUT", str(self.vision_analysis_timeout)))
+        
+        # Grounding settings
+        self.grounding_confidence_threshold = float(os.getenv("GROUNDING_CONFIDENCE_THRESHOLD", str(self.grounding_confidence_threshold)))
+        self.grounding_stale_timeout = float(os.getenv("GROUNDING_STALE_TIMEOUT", str(self.grounding_stale_timeout)))
     
     def _ensure_directories(self):
         """Ensure all required directories exist."""

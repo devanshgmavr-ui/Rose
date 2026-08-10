@@ -28,6 +28,15 @@ from .vision import (
 from .analyzer import VisionAnalyzer
 from .permissions import register_vision_permissions, VISION_PERMISSIONS
 from .vision_tool import VisionAnalyzeTool
+from .grounding import (
+    VisualGrounder,
+    GroundingResult,
+    GroundedTarget,
+    TargetType,
+    GroundingConfidence,
+    Point,
+)
+from .grounding_tool import VisualGroundingTool
 from .image_gen import ImageGenProvider, StubLocalImageGenProvider
 from .video_gen import VideoGenProvider, StubLocalVideoGenProvider
 
@@ -52,6 +61,13 @@ __all__ = [
     "register_vision_permissions",
     "VISION_PERMISSIONS",
     "VisionAnalyzeTool",
+    "VisualGrounder",
+    "GroundingResult",
+    "GroundedTarget",
+    "TargetType",
+    "GroundingConfidence",
+    "Point",
+    "VisualGroundingTool",
     "ImageGenProvider",
     "StubLocalImageGenProvider",
     "VideoGenProvider",
