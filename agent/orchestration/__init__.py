@@ -17,6 +17,7 @@ from .events import EventType, TaskEvent, EventLogger
 from .planner import Planner
 from .enhanced_planner import EnhancedPlanner
 from .tool_catalog import ToolMetadata, build_tool_catalog, get_tools_for_request
+from .tool_selector import IntentClassifier, ToolSelector, ToolMatch
 from .validator import PlanValidator
 from .executor import TaskExecutor
 from .verifier import Verifier
@@ -39,6 +40,9 @@ __all__ = [
     "ToolMetadata",
     "build_tool_catalog",
     "get_tools_for_request",
+    "IntentClassifier",
+    "ToolSelector",
+    "ToolMatch",
     "PlanValidator",
     "TaskExecutor",
     "Verifier",
