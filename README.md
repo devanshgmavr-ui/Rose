@@ -135,10 +135,10 @@ Windows / Filesystem / Browser / Sandbox
 | 3.1 | Vision Analysis | COMPLETE |
 | 3.2 | Visual Grounding | COMPLETE |
 | 3.3 | Observe/Act/Verify | COMPLETE |
-| 4.1 | Natural Language Tool Planning | PLANNED |
-| 4.1 | Backend API | PLANNED |
-| 4.2 | Web UI | PLANNED |
-| 5.1 | Voice I/O | PLANNED |
+| 4.1 | Natural Language Tool Planning | COMPLETE |
+| 4.2 | Automatic Tool Selection | COMPLETE |
+| 4.3 | Multi-Step Autonomous Tasks | COMPLETE |
+| 5.1 | Controlled Application Launching | PLANNED |
 | 6.1 | Cloud Scaling | PLANNED |
 
 ## Hardware Requirements
@@ -314,7 +314,7 @@ See `.env.example` for all available options.
 
 ## Testing
 
-**Current Result:** 923/923 tests passing (54 vision, 34 grounding, 27 OAV tests)
+**Current Result:** 1009/1009 tests passing
 
 ```powershell
 # Run all unit tests
