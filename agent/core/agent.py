@@ -52,6 +52,8 @@ from ..media import (
     VisionAnalyzeTool,
     VisualGrounder,
     VisualGroundingTool,
+    ObserveActVerifyLoop,
+    ObserveActVerifyTool,
     register_vision_permissions,
     ImageGenProvider,
     VideoGenProvider,
@@ -299,6 +301,16 @@ class Agent:
                 screen_height=self.config.max_screenshot_height,
             )
             self._tool_registry.register(self._visual_grounding_tool)
+            
+            self._observe_act_verify_tool = ObserveActVerifyTool(
+                vision_analyzer=self._vision_analyzer,
+                visual_grounder=self._visual_grounder,
+                vision_enabled=self.config.vision_enabled,
+                max_iterations=self.config.max_plan_steps,
+                max_actions=self.config.max_tool_calls,
+                timeout=self.config.max_task_duration,
+            )
+            self._tool_registry.register(self._observe_act_verify_tool)
         
         image_analyze_tool = ImageAnalyzeTool(self._media_router)
         image_generate_tool = ImageGenerateTool(self._media_router)
@@ -964,6 +976,7 @@ class Agent:
         self._vision_analyze_tool = None
         self._visual_grounder = None
         self._visual_grounding_tool = None
+        self._observe_act_verify_tool = None
         self._image_gen_provider = None
         self._video_gen_provider = None
         self._screen_capture_tool = None

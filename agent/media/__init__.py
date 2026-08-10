@@ -37,6 +37,8 @@ from .grounding import (
     Point,
 )
 from .grounding_tool import VisualGroundingTool
+from .observe_act_verify import ObserveActVerifyLoop, LoopConfig, LoopResult, LoopState, LoopExitReason
+from .oav_tool import ObserveActVerifyTool
 from .image_gen import ImageGenProvider, StubLocalImageGenProvider
 from .video_gen import VideoGenProvider, StubLocalVideoGenProvider
 
@@ -68,6 +70,12 @@ __all__ = [
     "GroundingConfidence",
     "Point",
     "VisualGroundingTool",
+    "ObserveActVerifyLoop",
+    "LoopConfig",
+    "LoopResult",
+    "LoopState",
+    "LoopExitReason",
+    "ObserveActVerifyTool",
     "ImageGenProvider",
     "StubLocalImageGenProvider",
     "VideoGenProvider",

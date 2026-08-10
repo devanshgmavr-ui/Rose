@@ -43,6 +43,23 @@ The project is being developed incrementally through staged milestones, with eac
 - Health checking and statistics
 - Text description generation with security wrapping
 
+**Stage 3.2 Visual Grounding Capabilities:**
+- VisualGrounder translates vision results into actionable coordinates
+- GroundedTarget with center point, bounding box, target type, confidence
+- Target classification (button, link, text_field, icon, menu, etc.)
+- Coordinate clamping to screen bounds
+- Target validation (bounds, confidence, staleness)
+- Ground/validate actions with untrusted data markers
+
+**Stage 3.3 Observe/Act/Verify Capabilities:**
+- Safe loop for visual automation with configurable limits
+- Maximum iteration count (prevents infinite loops)
+- Maximum action count
+- Timeout enforcement
+- Goal detection and achievement tracking
+- Cancel support
+- Step-by-step execution logging
+
 ## Architecture
 
 ```
@@ -116,8 +133,9 @@ Windows / Filesystem / Browser / Sandbox
 | 2.4.5 | Browser Screenshots | COMPLETE |
 | 2.4 | Browser Automation | IN PROGRESS |
 | 3.1 | Vision Analysis | COMPLETE |
-| 3.2 | Image Generation | PLANNED |
-| 3.3 | Video Generation | PLANNED |
+| 3.2 | Visual Grounding | COMPLETE |
+| 3.3 | Observe/Act/Verify | COMPLETE |
+| 4.1 | Natural Language Tool Planning | PLANNED |
 | 4.1 | Backend API | PLANNED |
 | 4.2 | Web UI | PLANNED |
 | 5.1 | Voice I/O | PLANNED |
@@ -296,7 +314,7 @@ See `.env.example` for all available options.
 
 ## Testing
 
-**Current Result:** 862/862 tests passing (54 vision tests, 359 browser tests total)
+**Current Result:** 923/923 tests passing (54 vision, 34 grounding, 27 OAV tests)
 
 ```powershell
 # Run all unit tests
@@ -405,14 +423,15 @@ The agent can:
   - 2.4.4 Browser Interaction (COMPLETE)
   - 2.4.5 Browser Screenshots (COMPLETE)
 
-### Stage 3: Perception (IN PROGRESS)
+### Stage 3: Perception (COMPLETE)
 - 3.1 Vision Analysis (COMPLETE)
-- 3.2 Visual Grounding (PLANNED)
-- 3.3 Observe/Act/Verify (PLANNED)
+- 3.2 Visual Grounding (COMPLETE)
+- 3.3 Observe/Act/Verify (COMPLETE)
 
-### Stage 4: Interface (PLANNED)
-- 4.1 Backend API
-- 4.2 Web UI
+### Stage 4: Agent Intelligence (IN PROGRESS)
+- 4.1 Natural Language Tool Planning (PLANNED)
+- 4.2 Automatic Tool Selection (PLANNED)
+- 4.3 Multi-Step Autonomous Tasks (PLANNED)
 
 ### Stage 5: Voice (PLANNED)
 - 5.1 Voice Input/Output
