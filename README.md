@@ -147,7 +147,7 @@ Windows / Filesystem / Browser / Sandbox
 | 7.1 | Session Persistence | COMPLETE |
 | 7.2 | Error Recovery | COMPLETE |
 | 7.3 | System Health Check | COMPLETE |
-| 8.1 | Web Interface | PLANNED |
+| 8.1 | Web Interface | COMPLETE |
 
 ## Hardware Requirements
 
@@ -322,7 +322,7 @@ See `.env.example` for all available options.
 
 ## Testing
 
-**Current Result:** 1221/1221 tests passing
+**Current Result:** 1245/1245 tests passing
 
 ```powershell
 # Run all unit tests
