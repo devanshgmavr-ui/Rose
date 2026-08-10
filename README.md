@@ -33,6 +33,16 @@ The project is being developed incrementally through staged milestones, with eac
 - Backend API and web UI
 - Cloud scaling options
 
+**Stage 3.1 Vision Analysis Capabilities:**
+- Provider-agnostic vision analysis architecture
+- Structured output with detected elements, bounding boxes, confidence levels
+- Workspace-boundary image validation
+- Image format, size, and dimension validation
+- Untrusted content markers for security
+- Vision permission system with configurable confirmation
+- Health checking and statistics
+- Text description generation with security wrapping
+
 ## Architecture
 
 ```
@@ -105,7 +115,7 @@ Windows / Filesystem / Browser / Sandbox
 | 2.4.4 | Browser Interaction | COMPLETE |
 | 2.4.5 | Browser Screenshots | COMPLETE |
 | 2.4 | Browser Automation | IN PROGRESS |
-| 3.1 | Vision Analysis | PLANNED |
+| 3.1 | Vision Analysis | COMPLETE |
 | 3.2 | Image Generation | PLANNED |
 | 3.3 | Video Generation | PLANNED |
 | 4.1 | Backend API | PLANNED |
@@ -238,6 +248,7 @@ See `.env.example` for all available options.
 | `browser.session` | DENIED | Yes (requires browser enabled) |
 | `browser.navigation` | DENIED | Yes (requires browser enabled) |
 | `browser.screenshot` | DENIED | Yes (requires browser + screenshot enabled) |
+| `vision.analyze` | DENIED | Yes (requires vision enabled) |
 
 ### Safety Features
 
@@ -266,6 +277,12 @@ See `.env.example` for all available options.
 - **Screenshot storage:** Secure workspace-boundary storage, PNG-only format
 - **Screenshot limits:** Configurable width, height, file size, and per-request count limits
 - **URL sanitization:** Sensitive query parameters redacted in logs
+- **Vision disabled:** Vision analysis disabled by default
+- **Vision workspace boundary:** Image paths validated against workspace
+- **Vision content markers:** All visual content wrapped with untrusted markers
+- **Vision permissions:** Dedicated vision.analyze permission with confirmation
+- **Vision validation:** Image format, size, and dimension limits enforced
+- **No binary in logs:** Image data never stored in audit logs
 - **No browser profiles:** No access to user Chrome/Edge data
 - **Action limits:** Configurable limits per request
 - **Audit logging:** All tool calls logged
@@ -279,7 +296,7 @@ See `.env.example` for all available options.
 
 ## Testing
 
-**Current Result:** 808/808 tests passing (359 browser tests total)
+**Current Result:** 862/862 tests passing (54 vision tests, 359 browser tests total)
 
 ```powershell
 # Run all unit tests
@@ -302,6 +319,7 @@ python -m pytest tests/unit/test_browser.py -v
 | Tools | Registry, router, permissions, audit |
 | Orchestration | Planning, execution, verification |
 | Media | Storage, routing, providers |
+| Vision | Provider, analyzer, permissions, tool, validation |
 | OS Control | Screen, system, mouse, keyboard, window |
 | Browser | Session management, navigation, page reading, interaction, screenshots, URL validation, models, permissions, tools |
 
@@ -331,6 +349,10 @@ The agent can:
 - Navigate browser pages to HTTP/HTTPS URLs
 - URL scheme validation (HTTP/HTTPS only)
 - Sensitive URL parameter sanitization in logs
+- Vision analysis with structured output
+- Image validation (format, size, dimensions)
+- Workspace-boundary image path validation
+- Untrusted content markers for visual data
 - Execute Python code in sandbox
 - Read/write files in workspace
 - Store and retrieve media files
@@ -339,7 +361,7 @@ The agent can:
 
 - Video provider is a stub (requires local model)
 - Image generation is a stub (requires local model)
-- Vision provider is a stub (requires local model)
+- Vision analysis works with metadata only (no real vision model loaded)
 - Python sandbox is subprocess-level, not kernel-isolated
 - OS automation is intentionally restricted
 - Mouse/keyboard disabled by default
@@ -368,7 +390,7 @@ The agent can:
 - 1.4 Task Orchestration
 - 1.5 Media Architecture
 
-### Stage 2: OS Automation (IN PROGRESS)
+### Stage 2: OS Automation (COMPLETE)
 - 2.1 Screen/System Control (COMPLETE)
 - 2.2 Mouse/Keyboard Control (COMPLETE)
 - 2.3 Window Management (COMPLETE)
@@ -376,17 +398,17 @@ The agent can:
   - 2.3.2 Window Enumeration (COMPLETE)
   - 2.3.3 Window Control Foundation (COMPLETE)
   - 2.3.4 Advanced Window Operations (COMPLETE)
-- 2.4 Browser Automation (IN PROGRESS)
+- 2.4 Browser Automation (COMPLETE)
   - 2.4.1 Browser Foundation / Session Management (COMPLETE)
   - 2.4.2 Browser Navigation (COMPLETE)
   - 2.4.3 Browser Page Reading (COMPLETE)
   - 2.4.4 Browser Interaction (COMPLETE)
   - 2.4.5 Browser Screenshots (COMPLETE)
 
-### Stage 3: Perception (PLANNED)
-- 3.1 Vision Analysis
-- 3.2 Image Generation
-- 3.3 Video Generation
+### Stage 3: Perception (IN PROGRESS)
+- 3.1 Vision Analysis (COMPLETE)
+- 3.2 Visual Grounding (PLANNED)
+- 3.3 Observe/Act/Verify (PLANNED)
 
 ### Stage 4: Interface (PLANNED)
 - 4.1 Backend API

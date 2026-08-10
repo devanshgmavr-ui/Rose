@@ -47,6 +47,10 @@ from ..media import (
     MediaStorage,
     MediaRouter,
     VisionProvider,
+    LocalVisionProvider,
+    VisionAnalyzer,
+    VisionAnalyzeTool,
+    register_vision_permissions,
     ImageGenProvider,
     VideoGenProvider,
 )
@@ -239,13 +243,44 @@ class Agent:
         self._media_storage = MediaStorage(workspace_dir="workspace")
         self._media_router = MediaRouter(storage=self._media_storage)
         
-        self._vision_provider = VisionProvider()
+        self._vision_provider = LocalVisionProvider(
+            model_path=self.config.vision_model_path if self.config.vision_model_path else None,
+            max_image_size_mb=self.config.vision_max_image_size_mb,
+            max_image_width=self.config.vision_max_image_width,
+            max_image_height=self.config.vision_max_image_height,
+            max_elements=self.config.vision_max_elements,
+            analysis_timeout=self.config.vision_analysis_timeout / 1000.0,
+        )
+        self._vision_provider.initialize()
+        
+        self._vision_analyzer = VisionAnalyzer(
+            vision_provider=self._vision_provider,
+            media_storage=self._media_storage,
+            max_elements=self.config.vision_max_elements,
+            analysis_timeout=self.config.vision_analysis_timeout / 1000.0,
+        )
+        
         self._image_gen_provider = ImageGenProvider()
         self._video_gen_provider = VideoGenProvider()
         
         self._media_router.register_provider(self._vision_provider)
         self._media_router.register_provider(self._image_gen_provider)
         self._media_router.register_provider(self._video_gen_provider)
+        
+        if self.config.vision_enabled:
+            register_vision_permissions(
+                self._permission_manager,
+                vision_enabled=self.config.vision_enabled,
+            )
+            
+            self._vision_analyze_tool = VisionAnalyzeTool(
+                vision_analyzer=self._vision_analyzer,
+                media_storage=self._media_storage,
+                vision_enabled=self.config.vision_enabled,
+                max_image_size_mb=self.config.vision_max_image_size_mb,
+                workspace_dir="workspace",
+            )
+            self._tool_registry.register(self._vision_analyze_tool)
         
         image_analyze_tool = ImageAnalyzeTool(self._media_router)
         image_generate_tool = ImageGenerateTool(self._media_router)
@@ -839,6 +874,12 @@ class Agent:
                 "page_read": "ENABLED" if self.config.browser_automation_enabled else "DISABLED",
                 "screenshot": "ENABLED" if (self.config.browser_screenshot_enabled and self.config.browser_automation_enabled) else "DISABLED",
             },
+            "vision": {
+                "enabled": self.config.vision_enabled,
+                "provider": self.config.vision_provider_type,
+                "initialized": self._vision_provider is not None,
+                "analyzer_initialized": self._vision_analyzer is not None if hasattr(self, '_vision_analyzer') else False,
+            },
         }
         
         if self._llm_provider:
@@ -901,6 +942,8 @@ class Agent:
         self._media_storage = None
         self._media_router = None
         self._vision_provider = None
+        self._vision_analyzer = None
+        self._vision_analyze_tool = None
         self._image_gen_provider = None
         self._video_gen_provider = None
         self._screen_capture_tool = None

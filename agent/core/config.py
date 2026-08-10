@@ -189,6 +189,16 @@ class Config:
         self.browser_max_screenshots_per_request = 10
         self.browser_screenshot_timeout = 10000
         
+        # Vision settings
+        self.vision_enabled = False
+        self.vision_provider_type = "local"
+        self.vision_model_path = ""
+        self.vision_max_image_size_mb = 20
+        self.vision_max_image_width = 4096
+        self.vision_max_image_height = 4096
+        self.vision_max_elements = 100
+        self.vision_analysis_timeout = 30000
+        
         # Set base directory
         if config_dir:
             self.base_dir = config_dir
@@ -342,6 +352,16 @@ class Config:
         self.browser_max_screenshot_size_mb = int(os.getenv("BROWSER_MAX_SCREENSHOT_SIZE_MB", str(self.browser_max_screenshot_size_mb)))
         self.browser_max_screenshots_per_request = int(os.getenv("BROWSER_MAX_SCREENSHOTS_PER_REQUEST", str(self.browser_max_screenshots_per_request)))
         self.browser_screenshot_timeout = int(os.getenv("BROWSER_SCREENSHOT_TIMEOUT", str(self.browser_screenshot_timeout)))
+        
+        # Vision settings
+        self.vision_enabled = os.getenv("VISION_ENABLED", "false").lower() == "true"
+        self.vision_provider_type = os.getenv("VISION_PROVIDER", self.vision_provider_type)
+        self.vision_model_path = os.getenv("VISION_MODEL_PATH", self.vision_model_path)
+        self.vision_max_image_size_mb = int(os.getenv("VISION_MAX_IMAGE_SIZE_MB", str(self.vision_max_image_size_mb)))
+        self.vision_max_image_width = int(os.getenv("VISION_MAX_IMAGE_WIDTH", str(self.vision_max_image_width)))
+        self.vision_max_image_height = int(os.getenv("VISION_MAX_IMAGE_HEIGHT", str(self.vision_max_image_height)))
+        self.vision_max_elements = int(os.getenv("VISION_MAX_ELEMENTS", str(self.vision_max_elements)))
+        self.vision_analysis_timeout = int(os.getenv("VISION_ANALYSIS_TIMEOUT", str(self.vision_analysis_timeout)))
     
     def _ensure_directories(self):
         """Ensure all required directories exist."""
