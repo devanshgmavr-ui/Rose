@@ -174,6 +174,11 @@ class Config:
         self.browser_action_timeout = 10000
         self.browser_max_page_text_chars = 20000
         self.browser_max_page_text_tokens = 5000
+        self.browser_max_elements_returned = 100
+        self.browser_max_input_text_length = 2000
+        self.browser_interaction_timeout = 10000
+        self.browser_max_interactions_per_request = 20
+        self.browser_max_wait_timeout = 15000
         
         # Set base directory
         if config_dir:
@@ -314,6 +319,11 @@ class Config:
         self.browser_action_timeout = int(os.getenv("BROWSER_ACTION_TIMEOUT", str(self.browser_action_timeout)))
         self.browser_max_page_text_chars = int(os.getenv("BROWSER_MAX_PAGE_TEXT_CHARS", str(self.browser_max_page_text_chars)))
         self.browser_max_page_text_tokens = int(os.getenv("BROWSER_MAX_PAGE_TEXT_TOKENS", str(self.browser_max_page_text_tokens)))
+        self.browser_max_elements_returned = int(os.getenv("BROWSER_MAX_ELEMENTS_RETURNED", str(self.browser_max_elements_returned)))
+        self.browser_max_input_text_length = int(os.getenv("BROWSER_MAX_INPUT_TEXT_LENGTH", str(self.browser_max_input_text_length)))
+        self.browser_interaction_timeout = int(os.getenv("BROWSER_INTERACTION_TIMEOUT", str(self.browser_interaction_timeout)))
+        self.browser_max_interactions_per_request = int(os.getenv("BROWSER_MAX_INTERACTIONS_PER_REQUEST", str(self.browser_max_interactions_per_request)))
+        self.browser_max_wait_timeout = int(os.getenv("BROWSER_MAX_WAIT_TIMEOUT", str(self.browser_max_wait_timeout)))
     
     def _ensure_directories(self):
         """Ensure all required directories exist."""

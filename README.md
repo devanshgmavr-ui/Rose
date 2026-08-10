@@ -21,6 +21,7 @@ The project is being developed incrementally through staged milestones, with eac
 - Window management (enumerate, activate, minimize, restore, maximize, close, move, resize)
 - Browser foundation (Playwright session management, isolated contexts)
 - Browser page reading (extract text content from pages with security wrapping)
+- Browser interaction (inspect, click, fill, select, press, wait with controlled targeting)
 
 **Planned Capabilities (In Development):**
 - Browser automation
@@ -100,6 +101,7 @@ Windows / Filesystem / Browser / Sandbox
 | 2.4.1 | Browser Foundation / Session Management | COMPLETE |
 | 2.4.2 | Browser Navigation | COMPLETE |
 | 2.4.3 | Browser Page Reading | COMPLETE |
+| 2.4.4 | Browser Interaction | COMPLETE |
 | 2.4 | Browser Automation | IN PROGRESS |
 | 3.1 | Vision Analysis | PLANNED |
 | 3.2 | Image Generation | PLANNED |
@@ -255,6 +257,8 @@ See `.env.example` for all available options.
 - **Browser page limit:** Maximum pages per session enforced
 - **Browser navigation:** HTTP/HTTPS only, unsupported schemes blocked
 - **Browser page reading:** Content treated as untrusted, wrapped with security markers
+- **Browser interaction:** Controlled element targeting, value redaction, no JavaScript execution
+- **Browser inspect:** Read-only element inspection with configurable limits
 - **URL sanitization:** Sensitive query parameters redacted in logs
 - **No browser profiles:** No access to user Chrome/Edge data
 - **Action limits:** Configurable limits per request
@@ -293,7 +297,7 @@ python -m pytest tests/unit/test_browser.py -v
 | Orchestration | Planning, execution, verification |
 | Media | Storage, routing, providers |
 | OS Control | Screen, system, mouse, keyboard, window |
-| Browser | Session management, navigation, page reading, URL validation, models, permissions, tools |
+| Browser | Session management, navigation, page reading, interaction, URL validation, models, permissions, tools |
 
 ## Current Capabilities
 
@@ -341,6 +345,8 @@ The agent can:
 - No process management or termination
 - Browser automation disabled by default
 - Browser page reading is available (with security wrapping)
+- Browser interaction is available (inspect, click, fill, select, press, wait)
+- No JavaScript execution is supported through browser tools
 - Browser interaction not yet implemented
 - Browser screenshots not yet implemented
 - No persistent browser profiles
@@ -368,6 +374,7 @@ The agent can:
   - 2.4.1 Browser Foundation / Session Management (COMPLETE)
   - 2.4.2 Browser Navigation (COMPLETE)
   - 2.4.3 Browser Page Reading (COMPLETE)
+  - 2.4.4 Browser Interaction (COMPLETE)
 
 ### Stage 3: Perception (PLANNED)
 - 3.1 Vision Analysis

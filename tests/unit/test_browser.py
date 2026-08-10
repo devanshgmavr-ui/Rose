@@ -1,10 +1,10 @@
 """Unit tests for browser automation.
 
-Stage 2.4.3 - Browser page reading tests.
+Stage 2.4.4 - Browser interaction tests.
 
 Covers: configuration, models, session, manager, permissions,
 URL validation, URL sanitization, navigation tool, page reading,
-security, agent integration.
+interaction, security, agent integration.
 """
 
 import time
@@ -24,7 +24,7 @@ from agent.browser.permissions import (
     BROWSER_PERMISSIONS,
     BROWSER_PERMISSION_SCOPES,
 )
-from agent.browser.tools import BrowserSessionTool, BrowserNavigationTool, BrowserPageReadTool
+from agent.browser.tools import BrowserSessionTool, BrowserNavigationTool, BrowserPageReadTool, BrowserInteractionTool
 
 
 # ============================================================
@@ -1870,3 +1870,596 @@ class TestPageReadPackageImports:
     def test_permissions_module_updated(self):
         from agent.browser.permissions import BROWSER_PERMISSIONS
         assert "browser.page_read" in BROWSER_PERMISSIONS
+
+
+# ============================================================
+# Stage 2.4.4 - Browser Interaction Tests
+# ============================================================
+
+class TestInteractionConfig:
+    def test_browser_max_elements_returned_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_elements_returned == 100
+
+    def test_browser_max_input_text_length_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_input_text_length == 2000
+
+    def test_browser_interaction_timeout_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_interaction_timeout == 10000
+
+    def test_browser_max_wait_timeout_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_wait_timeout == 15000
+
+    @patch.dict("os.environ", {"BROWSER_MAX_ELEMENTS_RETURNED": "50"})
+    def test_browser_max_elements_returned_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_elements_returned == 50
+
+    @patch.dict("os.environ", {"BROWSER_MAX_INPUT_TEXT_LENGTH": "1000"})
+    def test_browser_max_input_text_length_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_input_text_length == 1000
+
+    @patch.dict("os.environ", {"BROWSER_INTERACTION_TIMEOUT": "5000"})
+    def test_browser_interaction_timeout_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_interaction_timeout == 5000
+
+    @patch.dict("os.environ", {"BROWSER_MAX_WAIT_TIMEOUT": "10000"})
+    def test_browser_max_wait_timeout_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_wait_timeout == 10000
+
+
+class TestInteractionPermissions:
+    def test_inspect_permission_exists(self):
+        assert "browser.inspect" in BROWSER_PERMISSIONS
+
+    def test_inspect_permission_default_level(self):
+        assert BROWSER_PERMISSIONS["browser.inspect"] == ConfirmationLevel.ALLOW
+
+    def test_interact_permission_exists(self):
+        assert "browser.interact" in BROWSER_PERMISSIONS
+
+    def test_interact_permission_default_level(self):
+        assert BROWSER_PERMISSIONS["browser.interact"] == ConfirmationLevel.REQUIRE_CONFIRMATION
+
+    def test_inspect_permission_scopes(self):
+        assert "browser.inspect" in BROWSER_PERMISSION_SCOPES
+        assert "*" in BROWSER_PERMISSION_SCOPES["browser.inspect"]
+
+    def test_interact_permission_scopes(self):
+        assert "browser.interact" in BROWSER_PERMISSION_SCOPES
+        assert "*" in BROWSER_PERMISSION_SCOPES["browser.interact"]
+
+    def test_register_inspect_permission(self):
+        pm = PermissionManager()
+        register_browser_permissions(pm, browser_enabled=True)
+        assert pm.has_permission("browser.inspect", "*")
+
+    def test_register_interact_permission(self):
+        pm = PermissionManager()
+        register_browser_permissions(pm, browser_enabled=True)
+        assert pm.has_permission("browser.interact", "*")
+
+    def test_register_inspect_not_when_disabled(self):
+        pm = PermissionManager()
+        register_browser_permissions(pm, browser_enabled=False)
+        assert not pm.has_permission("browser.inspect", "*")
+
+    def test_register_interact_not_when_disabled(self):
+        pm = PermissionManager()
+        register_browser_permissions(pm, browser_enabled=False)
+        assert not pm.has_permission("browser.interact", "*")
+
+
+class TestBrowserInteractionTool:
+    def test_tool_name(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        assert tool.name == "browser_interaction"
+
+    def test_tool_description(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        assert "browser" in tool.description.lower()
+        assert "inspect" in tool.description.lower()
+        assert "click" in tool.description.lower()
+
+    def test_required_permissions(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        assert tool.required_permissions == ["browser.interact"]
+
+    def test_confirmation_level_enabled(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        assert tool.confirmation_level == ConfirmationLevel.REQUIRE_CONFIRMATION
+
+    def test_confirmation_level_disabled(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=False)
+        assert tool.confirmation_level == ConfirmationLevel.DENY
+
+    def test_validate_disabled(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=False)
+        valid, errors = tool.validate({"action": "inspect", "session_id": "s1"})
+        assert valid is False
+        assert "disabled" in errors[0].lower()
+
+    def test_validate_invalid_action(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "invalid", "session_id": "s1"})
+        assert valid is False
+        assert "Invalid action" in errors[0]
+
+    def test_validate_missing_session_id(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "inspect"})
+        assert valid is False
+        assert "session_id is required" in errors[0]
+
+    def test_validate_click_requires_target(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "click", "session_id": "s1"})
+        assert valid is False
+        assert "index or selector" in errors[0].lower()
+
+    def test_validate_click_with_index(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "click", "session_id": "s1", "index": 0})
+        assert valid is True
+
+    def test_validate_click_with_selector(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "click", "session_id": "s1", "selector": "button"})
+        assert valid is True
+
+    def test_validate_fill_requires_target(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "fill", "session_id": "s1", "value": "test"})
+        assert valid is False
+        assert "index or selector" in errors[0].lower()
+
+    def test_validate_fill_requires_value(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "fill", "session_id": "s1", "index": 0})
+        assert valid is False
+        assert "value is required" in errors[0]
+
+    def test_validate_fill_value_too_long(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True, max_input_text_length=100)
+        valid, errors = tool.validate({"action": "fill", "session_id": "s1", "index": 0, "value": "x" * 200})
+        assert valid is False
+        assert "exceeds" in errors[0].lower()
+
+    def test_validate_fill_success(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "fill", "session_id": "s1", "index": 0, "value": "test"})
+        assert valid is True
+
+    def test_validate_select_requires_target(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "select", "session_id": "s1", "value": "opt1"})
+        assert valid is False
+
+    def test_validate_select_requires_value(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "select", "session_id": "s1", "index": 0})
+        assert valid is False
+        assert "value is required" in errors[0]
+
+    def test_validate_select_success(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "select", "session_id": "s1", "index": 0, "value": "opt1"})
+        assert valid is True
+
+    def test_validate_press_requires_key(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "press", "session_id": "s1"})
+        assert valid is False
+        assert "key is required" in errors[0]
+
+    def test_validate_press_invalid_key(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "press", "session_id": "s1", "key": "InvalidKey"})
+        assert valid is False
+        assert "Unsupported key" in errors[0]
+
+    def test_validate_press_valid_key(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "press", "session_id": "s1", "key": "Enter"})
+        assert valid is True
+
+    def test_validate_wait_requires_condition(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "wait", "session_id": "s1"})
+        assert valid is False
+        assert "condition is required" in errors[0]
+
+    def test_validate_wait_invalid_condition(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "wait", "session_id": "s1", "condition": "invalid", "condition_value": "test"})
+        assert valid is False
+        assert "Invalid condition" in errors[0]
+
+    def test_validate_wait_requires_condition_value(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "wait", "session_id": "s1", "condition": "selector"})
+        assert valid is False
+        assert "condition_value is required" in errors[0]
+
+    def test_validate_wait_success(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        valid, errors = tool.validate({"action": "wait", "session_id": "s1", "condition": "selector", "condition_value": "button"})
+        assert valid is True
+
+    def test_tool_timeout(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        assert tool.timeout == 30.0
+
+    def test_input_schema(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        schema = tool.input_schema
+        assert "action" in schema["properties"]
+        assert "session_id" in schema["properties"]
+        assert "index" in schema["properties"]
+        assert "selector" in schema["properties"]
+        assert "value" in schema["properties"]
+        assert "key" in schema["properties"]
+        assert "condition" in schema["properties"]
+        assert "condition_value" in schema["properties"]
+        assert "timeout" in schema["properties"]
+        assert set(schema["properties"]["action"]["enum"]) == {"inspect", "click", "fill", "select", "press", "wait"}
+
+    def test_execute_session_not_found(self):
+        mock_manager = MagicMock()
+        mock_manager.get_session.return_value = None
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "inspect", "session_id": "missing"})
+        assert result.success is False
+        assert "not found" in result.error.lower()
+
+    def test_execute_session_closed(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = True
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "inspect", "session_id": "s1"})
+        assert result.success is False
+        assert "closed" in result.error.lower()
+
+    def test_execute_inspect_success(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.inspect_page.return_value = {
+            "elements": [{"index": 0, "tag": "button", "text": "Submit", "visible": True, "enabled": True}],
+            "count": 1,
+            "truncated": False,
+            "page_url": "https://example.com",
+            "page_title": "Test",
+            "content_wrapped": True,
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "inspect", "session_id": "s1"})
+        assert result.success is True
+        assert "[BEGIN UNTRUSTED WEBPAGE CONTENT]" in result.output
+        assert "Submit" in result.output
+
+    def test_execute_click_success(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.click_element.return_value = {"success": True, "page_url": "https://example.com", "page_title": "Test"}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "click", "session_id": "s1", "index": 0})
+        assert result.success is True
+        assert result.metadata["action"] == "click"
+
+    def test_execute_click_failure(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.click_element.return_value = {"success": False, "error": "Element not found", "code": "INVALID_TARGET"}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "click", "session_id": "s1", "index": 0})
+        assert result.success is False
+        assert "Element not found" in result.error
+
+    def test_execute_fill_success(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.fill_field.return_value = {"success": True, "page_url": "https://example.com", "page_title": "Test", "value_length": 4}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "fill", "session_id": "s1", "index": 0, "value": "test"})
+        assert result.success is True
+        assert result.metadata["action"] == "fill"
+        assert result.metadata["value"] == "[REDACTED]"
+        assert result.metadata["value_length"] == 4
+
+    def test_execute_fill_failure(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.fill_field.return_value = {"success": False, "error": "Element disabled", "code": "DISABLED"}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "fill", "session_id": "s1", "index": 0, "value": "test"})
+        assert result.success is False
+
+    def test_execute_select_success(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.select_option.return_value = {"success": True, "page_url": "https://example.com", "page_title": "Test"}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "select", "session_id": "s1", "index": 0, "value": "opt1"})
+        assert result.success is True
+        assert result.metadata["action"] == "select"
+        assert result.metadata["selected_value"] == "opt1"
+
+    def test_execute_select_failure(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.select_option.return_value = {"success": False, "error": "Option not found", "code": "SELECT_FAILED"}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "select", "session_id": "s1", "index": 0, "value": "opt1"})
+        assert result.success is False
+
+    def test_execute_press_success(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.press_key.return_value = {"success": True, "page_url": "https://example.com", "page_title": "Test"}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "press", "session_id": "s1", "key": "Enter"})
+        assert result.success is True
+        assert result.metadata["action"] == "press"
+        assert result.metadata["key"] == "Enter"
+
+    def test_execute_press_failure(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.press_key.return_value = {"success": False, "error": "Key press failed", "code": "PRESS_FAILED"}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "press", "session_id": "s1", "key": "Enter"})
+        assert result.success is False
+
+    def test_execute_wait_success(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.wait_for_state.return_value = {"success": True, "page_url": "https://example.com"}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "wait", "session_id": "s1", "condition": "load_state", "condition_value": "load"})
+        assert result.success is True
+        assert result.metadata["action"] == "wait"
+
+    def test_execute_wait_failure(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.wait_for_state.return_value = {"success": False, "error": "Wait timed out", "code": "TIMEOUT"}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "wait", "session_id": "s1", "condition": "selector", "condition_value": "button"})
+        assert result.success is False
+
+    def test_execute_unexpected_exception(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.inspect_page.side_effect = RuntimeError("unexpected")
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "inspect", "session_id": "s1"})
+        assert result.success is False
+        assert "Unexpected error" in result.error
+
+    def test_fill_value_redacted_in_audit(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.fill_field.return_value = {"success": True, "page_url": "https://example.com", "page_title": "Test", "value_length": 8}
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        result = tool.execute({"action": "fill", "session_id": "s1", "index": 0, "value": "password123"})
+        assert result.success is True
+        assert result.metadata["value"] == "[REDACTED]"
+        assert result.metadata["value_length"] == 11
+        assert "password123" not in str(result.metadata)
+
+
+class TestSessionInteraction:
+    def test_inspect_closed_session(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=MagicMock())
+        mgr.close()
+        result = mgr.inspect_page()
+        assert "error" in result
+        assert result["code"] == "SESSION_CLOSED"
+
+    def test_click_closed_session(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=MagicMock())
+        mgr.close()
+        result = mgr.click_element(index=0)
+        assert result["success"] is False
+        assert result["code"] == "SESSION_CLOSED"
+
+    def test_fill_closed_session(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=MagicMock())
+        mgr.close()
+        result = mgr.fill_field(value="test", index=0)
+        assert result["success"] is False
+        assert result["code"] == "SESSION_CLOSED"
+
+    def test_select_closed_session(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=MagicMock())
+        mgr.close()
+        result = mgr.select_option(value="opt1", index=0)
+        assert result["success"] is False
+        assert result["code"] == "SESSION_CLOSED"
+
+    def test_press_closed_session(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=MagicMock())
+        mgr.close()
+        result = mgr.press_key(key="Enter")
+        assert result["success"] is False
+        assert result["code"] == "SESSION_CLOSED"
+
+    def test_wait_closed_session(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=MagicMock())
+        mgr.close()
+        result = mgr.wait_for_state(state="load")
+        assert result["success"] is False
+        assert result["code"] == "SESSION_CLOSED"
+
+    def test_resolve_locator_index(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mock_page = MagicMock()
+        mock_locator = MagicMock()
+        mock_page.locator.return_value.all.return_value = [mock_locator]
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=mock_page)
+        result = mgr._resolve_locator(index=0)
+        assert result is not None
+
+    def test_resolve_locator_index_out_of_range(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mock_page = MagicMock()
+        mock_page.locator.return_value.all.return_value = []
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=mock_page)
+        result = mgr._resolve_locator(index=0)
+        assert result is None
+
+    def test_resolve_locator_selector(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mock_page = MagicMock()
+        mock_locator = MagicMock()
+        mock_page.locator.return_value.first = mock_locator
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=mock_page)
+        result = mgr._resolve_locator(selector="button")
+        assert result is not None
+
+    def test_resolve_locator_none(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mock_page = MagicMock()
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=mock_page)
+        result = mgr._resolve_locator()
+        assert result is None
+
+    def test_wait_invalid_condition(self):
+        session = BrowserSession(session_id="s1", created_at=time.time(), headless=True)
+        mock_page = MagicMock()
+        mgr = BrowserSessionManager(session=session, browser=MagicMock(), context=MagicMock(), page=mock_page)
+        result = mgr.wait_for_state(state="invalid")
+        assert result["success"] is False
+        assert result["code"] == "INVALID_CONDITION"
+
+
+class TestInteractionRouterIntegration:
+    def test_router_routes_interaction_tool(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.inspect_page.return_value = {
+            "elements": [],
+            "count": 0,
+            "truncated": False,
+            "page_url": "https://example.com",
+            "page_title": "Test",
+            "content_wrapped": True,
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=True)
+        registry = ToolRegistry()
+        registry.register(tool)
+        pm = PermissionManager()
+        register_browser_permissions(pm, browser_enabled=True)
+        audit = AuditLogger(log_dir="logs")
+        router = ToolRouter(registry=registry, permission_manager=pm, audit_logger=audit)
+        req = ToolRequest(tool="browser_interaction", arguments={"action": "inspect", "session_id": "s1"})
+        result = router.route(req)
+        assert result.success is True
+
+    def test_router_blocks_interaction_when_disabled(self):
+        mock_manager = MagicMock()
+        tool = BrowserInteractionTool(browser_manager=mock_manager, browser_enabled=False)
+        registry = ToolRegistry()
+        registry.register(tool)
+        pm = PermissionManager()
+        audit = AuditLogger(log_dir="logs")
+        router = ToolRouter(registry=registry, permission_manager=pm, audit_logger=audit)
+        result = router.execute_tool("browser_interaction", {"action": "inspect", "session_id": "s1"})
+        assert result.success is False
+        assert "disabled" in result.error.lower()
+
+
+class TestInteractionPackageImports:
+    def test_import_browser_interaction_tool(self):
+        from agent.browser import BrowserInteractionTool
+        assert BrowserInteractionTool is not None
+
+    def test_import_from_tools_module(self):
+        from agent.browser.tools import BrowserInteractionTool
+        assert BrowserInteractionTool is not None
+
+    def test_all_exports(self):
+        from agent.browser import __all__
+        assert "BrowserInteractionTool" in __all__
+
+    def test_permissions_module_updated(self):
+        from agent.browser.permissions import BROWSER_PERMISSIONS
+        assert "browser.inspect" in BROWSER_PERMISSIONS
+        assert "browser.interact" in BROWSER_PERMISSIONS

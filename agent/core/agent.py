@@ -69,6 +69,7 @@ from ..browser import (
     BrowserSessionTool,
     BrowserNavigationTool,
     BrowserPageReadTool,
+    BrowserInteractionTool,
     register_browser_permissions,
 )
 
@@ -135,6 +136,7 @@ class Agent:
         self._browser_session_tool: Optional[BrowserSessionTool] = None
         self._browser_navigation_tool: Optional[BrowserNavigationTool] = None
         self._browser_page_read_tool: Optional[BrowserPageReadTool] = None
+        self._browser_interaction_tool: Optional[BrowserInteractionTool] = None
         
         logger.info(f"Agent initialized: {self.config.project_name} v{self.config.version}")
     
@@ -345,6 +347,16 @@ class Agent:
             max_page_text_tokens=self.config.browser_max_page_text_tokens,
         )
         self._tool_registry.register(self._browser_page_read_tool)
+        
+        self._browser_interaction_tool = BrowserInteractionTool(
+            browser_manager=self._browser_manager,
+            browser_enabled=self.config.browser_automation_enabled,
+            max_elements_returned=self.config.browser_max_elements_returned,
+            max_input_text_length=self.config.browser_max_input_text_length,
+            interaction_timeout=self.config.browser_interaction_timeout,
+            max_wait_timeout=self.config.browser_max_wait_timeout,
+        )
+        self._tool_registry.register(self._browser_interaction_tool)
         
         logger.info("Browser system initialized")
     
@@ -887,6 +899,7 @@ class Agent:
         self._browser_session_tool = None
         self._browser_navigation_tool = None
         self._browser_page_read_tool = None
+        self._browser_interaction_tool = None
         
         logger.info("Agent shutdown complete")
     

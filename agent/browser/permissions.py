@@ -1,6 +1,6 @@
 """Browser permission constants and defaults.
 
-Stage 2.4.3 - Browser page reading permissions.
+Stage 2.4.4 - Browser interaction permissions.
 
 Defines browser-specific permissions following the existing
 OS permission architecture. Browser automation is disabled
@@ -14,12 +14,16 @@ BROWSER_PERMISSIONS = {
     "browser.session": ConfirmationLevel.REQUIRE_CONFIRMATION,
     "browser.navigation": ConfirmationLevel.REQUIRE_CONFIRMATION,
     "browser.page_read": ConfirmationLevel.REQUIRE_CONFIRMATION,
+    "browser.inspect": ConfirmationLevel.ALLOW,
+    "browser.interact": ConfirmationLevel.REQUIRE_CONFIRMATION,
 }
 
 BROWSER_PERMISSION_SCOPES = {
     "browser.session": {"*"},
     "browser.navigation": {"*"},
     "browser.page_read": {"*"},
+    "browser.inspect": {"*"},
+    "browser.interact": {"*"},
 }
 
 

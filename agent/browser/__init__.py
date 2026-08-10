@@ -1,10 +1,11 @@
 """Browser automation subsystem.
 
-Stage 2.4.3 - Browser page reading support.
+Stage 2.4.4 - Browser interaction support.
 
 Provides Playwright-based browser session management
 with isolated contexts, configurable security, safe
-URL navigation, and page text extraction.
+URL navigation, page text extraction, and controlled
+page interaction.
 """
 
 from .models import BrowserSession, BrowserPage, SessionStatus
@@ -12,7 +13,7 @@ from .session import BrowserSessionManager
 from .manager import BrowserManager
 from .permissions import register_browser_permissions, BROWSER_PERMISSIONS, BROWSER_PERMISSION_SCOPES
 from .policy import validate_url, sanitize_url_for_log
-from .tools import BrowserSessionTool, BrowserNavigationTool, BrowserPageReadTool
+from .tools import BrowserSessionTool, BrowserNavigationTool, BrowserPageReadTool, BrowserInteractionTool
 
 __all__ = [
     "BrowserSession",
@@ -23,6 +24,7 @@ __all__ = [
     "BrowserSessionTool",
     "BrowserNavigationTool",
     "BrowserPageReadTool",
+    "BrowserInteractionTool",
     "register_browser_permissions",
     "BROWSER_PERMISSIONS",
     "BROWSER_PERMISSION_SCOPES",
