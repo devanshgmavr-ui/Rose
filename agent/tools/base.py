@@ -13,6 +13,7 @@ class Permission(Enum):
     FILESYSTEM_WRITE = "filesystem.write"
     CODE_EXECUTE = "code.execute"
     COMMAND_EXECUTE = "command.execute"
+    APP_LAUNCH = "app.launch"
 
 
 class ConfirmationLevel(Enum):
