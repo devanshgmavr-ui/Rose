@@ -1,0 +1,84 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment (secrets)
+.env
+.env.*
+!.env.example
+
+# Models (large files - never commit)
+models/*.gguf
+models/*.bin
+models/*.pt
+models/*.pth
+models/*.safetensors
+models/*.ckpt
+!models/.gitkeep
+
+# Logs
+logs/
+!logs/.gitkeep
+
+# Data (runtime state)
+data/*
+!data/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+
+# Outputs
+outputs/*
+!outputs/.gitkeep
+
+# Sandbox
+sandbox/*
+!sandbox/.gitkeep
+
+# Sessions
+sessions/
+*.session
+*.session.json
+
+# Workspace (generated content)
+workspace/
+!workspace/.gitkeep
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db

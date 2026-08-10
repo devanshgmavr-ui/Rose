@@ -1,0 +1,14 @@
+# Core
+pydantic>=2.0.0
+pyyaml>=6.0.0
+python-dotenv>=1.0.0
+
+# LLM Runtime
+llama-cpp-python>=0.3.0
+
+# Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+
+# Development
+rich>=13.0.0

@@ -1,0 +1,65 @@
+# Rose Settings
+
+project:
+  name: "Rose"
+  version: "0.1.0"
+  stage: "1.1"
+
+model:
+  # Model file path (relative to project root)
+  path: "./models/qwen2.5-coder-7b-instruct-q4_k_m.gguf"
+  
+  # Model parameters
+  name: "qwen2.5-coder-7b-instruct"
+  context_length: 4096
+  
+  # GPU settings (set to 0 for CPU-only, 28 for full GPU offload of 7B model)
+  n_gpu_layers: 28
+  n_batch: 512
+  
+  # Generation parameters
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 2048
+  repeat_penalty: 1.1
+
+llm:
+  # Provider configuration
+  provider: "local"
+  
+  # Timeout settings
+  timeout: 120
+  
+  # Retry settings
+  max_retries: 3
+  retry_delay: 1.0
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./logs/agent.log"
+  
+  # Separate logs for different components
+  handlers:
+    console:
+      enabled: true
+      level: "INFO"
+    file:
+      enabled: true
+      level: "DEBUG"
+
+paths:
+  data: "./data"
+  outputs: "./outputs"
+  models: "./models"
+  logs: "./logs"
+  sandbox: "./sandbox"
+
+agent:
+  # Agent behavior
+  verbose: false
+  max_history: 50
+  
+  # Safety settings
+  require_confirmation: true
+  log_commands: true
