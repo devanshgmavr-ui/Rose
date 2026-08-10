@@ -22,6 +22,7 @@ The project is being developed incrementally through staged milestones, with eac
 - Browser foundation (Playwright session management, isolated contexts)
 - Browser page reading (extract text content from pages with security wrapping)
 - Browser interaction (inspect, click, fill, select, press, wait with controlled targeting)
+- Browser screenshots (viewport, full-page, element capture with secure storage)
 
 **Planned Capabilities (In Development):**
 - Browser automation
@@ -102,6 +103,7 @@ Windows / Filesystem / Browser / Sandbox
 | 2.4.2 | Browser Navigation | COMPLETE |
 | 2.4.3 | Browser Page Reading | COMPLETE |
 | 2.4.4 | Browser Interaction | COMPLETE |
+| 2.4.5 | Browser Screenshots | COMPLETE |
 | 2.4 | Browser Automation | IN PROGRESS |
 | 3.1 | Vision Analysis | PLANNED |
 | 3.2 | Image Generation | PLANNED |
@@ -235,6 +237,7 @@ See `.env.example` for all available options.
 | `os.window` | ALLOW | No (mutations require confirmation) |
 | `browser.session` | DENIED | Yes (requires browser enabled) |
 | `browser.navigation` | DENIED | Yes (requires browser enabled) |
+| `browser.screenshot` | DENIED | Yes (requires browser + screenshot enabled) |
 
 ### Safety Features
 
@@ -259,6 +262,9 @@ See `.env.example` for all available options.
 - **Browser page reading:** Content treated as untrusted, wrapped with security markers
 - **Browser interaction:** Controlled element targeting, value redaction, no JavaScript execution
 - **Browser inspect:** Read-only element inspection with configurable limits
+- **Browser screenshots:** Viewport, full-page, and element capture with dimension/size limits
+- **Screenshot storage:** Secure workspace-boundary storage, PNG-only format
+- **Screenshot limits:** Configurable width, height, file size, and per-request count limits
 - **URL sanitization:** Sensitive query parameters redacted in logs
 - **No browser profiles:** No access to user Chrome/Edge data
 - **Action limits:** Configurable limits per request
@@ -273,7 +279,7 @@ See `.env.example` for all available options.
 
 ## Testing
 
-**Current Result:** 609/609 tests passing (160 browser tests total)
+**Current Result:** 808/808 tests passing (359 browser tests total)
 
 ```powershell
 # Run all unit tests
@@ -297,7 +303,7 @@ python -m pytest tests/unit/test_browser.py -v
 | Orchestration | Planning, execution, verification |
 | Media | Storage, routing, providers |
 | OS Control | Screen, system, mouse, keyboard, window |
-| Browser | Session management, navigation, page reading, interaction, URL validation, models, permissions, tools |
+| Browser | Session management, navigation, page reading, interaction, screenshots, URL validation, models, permissions, tools |
 
 ## Current Capabilities
 
@@ -346,9 +352,9 @@ The agent can:
 - Browser automation disabled by default
 - Browser page reading is available (with security wrapping)
 - Browser interaction is available (inspect, click, fill, select, press, wait)
+- Browser screenshots are available (viewport, full-page, element)
 - No JavaScript execution is supported through browser tools
 - Browser interaction not yet implemented
-- Browser screenshots not yet implemented
 - No persistent browser profiles
 - 4K token context limit (VRAM constrained)
 - Single monitor support only
@@ -375,6 +381,7 @@ The agent can:
   - 2.4.2 Browser Navigation (COMPLETE)
   - 2.4.3 Browser Page Reading (COMPLETE)
   - 2.4.4 Browser Interaction (COMPLETE)
+  - 2.4.5 Browser Screenshots (COMPLETE)
 
 ### Stage 3: Perception (PLANNED)
 - 3.1 Vision Analysis

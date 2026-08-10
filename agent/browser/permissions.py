@@ -1,6 +1,6 @@
 """Browser permission constants and defaults.
 
-Stage 2.4.4 - Browser interaction permissions.
+Stage 2.4.5 - Browser screenshot support.
 
 Defines browser-specific permissions following the existing
 OS permission architecture. Browser automation is disabled
@@ -16,6 +16,7 @@ BROWSER_PERMISSIONS = {
     "browser.page_read": ConfirmationLevel.REQUIRE_CONFIRMATION,
     "browser.inspect": ConfirmationLevel.ALLOW,
     "browser.interact": ConfirmationLevel.REQUIRE_CONFIRMATION,
+    "browser.screenshot": ConfirmationLevel.REQUIRE_CONFIRMATION,
 }
 
 BROWSER_PERMISSION_SCOPES = {
@@ -24,6 +25,7 @@ BROWSER_PERMISSION_SCOPES = {
     "browser.page_read": {"*"},
     "browser.inspect": {"*"},
     "browser.interact": {"*"},
+    "browser.screenshot": {"*"},
 }
 
 

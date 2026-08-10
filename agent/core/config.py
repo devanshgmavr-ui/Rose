@@ -180,6 +180,15 @@ class Config:
         self.browser_max_interactions_per_request = 20
         self.browser_max_wait_timeout = 15000
         
+        # Browser screenshot settings
+        self.browser_screenshot_enabled = False
+        self.browser_max_screenshot_width = 3840
+        self.browser_max_screenshot_height = 2160
+        self.browser_max_full_page_height = 10000
+        self.browser_max_screenshot_size_mb = 20
+        self.browser_max_screenshots_per_request = 10
+        self.browser_screenshot_timeout = 10000
+        
         # Set base directory
         if config_dir:
             self.base_dir = config_dir
@@ -324,6 +333,15 @@ class Config:
         self.browser_interaction_timeout = int(os.getenv("BROWSER_INTERACTION_TIMEOUT", str(self.browser_interaction_timeout)))
         self.browser_max_interactions_per_request = int(os.getenv("BROWSER_MAX_INTERACTIONS_PER_REQUEST", str(self.browser_max_interactions_per_request)))
         self.browser_max_wait_timeout = int(os.getenv("BROWSER_MAX_WAIT_TIMEOUT", str(self.browser_max_wait_timeout)))
+        
+        # Browser screenshot settings
+        self.browser_screenshot_enabled = os.getenv("BROWSER_SCREENSHOT_ENABLED", "false").lower() == "true"
+        self.browser_max_screenshot_width = int(os.getenv("BROWSER_MAX_SCREENSHOT_WIDTH", str(self.browser_max_screenshot_width)))
+        self.browser_max_screenshot_height = int(os.getenv("BROWSER_MAX_SCREENSHOT_HEIGHT", str(self.browser_max_screenshot_height)))
+        self.browser_max_full_page_height = int(os.getenv("BROWSER_MAX_FULL_PAGE_HEIGHT", str(self.browser_max_full_page_height)))
+        self.browser_max_screenshot_size_mb = int(os.getenv("BROWSER_MAX_SCREENSHOT_SIZE_MB", str(self.browser_max_screenshot_size_mb)))
+        self.browser_max_screenshots_per_request = int(os.getenv("BROWSER_MAX_SCREENSHOTS_PER_REQUEST", str(self.browser_max_screenshots_per_request)))
+        self.browser_screenshot_timeout = int(os.getenv("BROWSER_SCREENSHOT_TIMEOUT", str(self.browser_screenshot_timeout)))
     
     def _ensure_directories(self):
         """Ensure all required directories exist."""

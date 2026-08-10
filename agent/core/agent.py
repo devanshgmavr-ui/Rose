@@ -70,6 +70,7 @@ from ..browser import (
     BrowserNavigationTool,
     BrowserPageReadTool,
     BrowserInteractionTool,
+    BrowserScreenshotTool,
     register_browser_permissions,
 )
 
@@ -137,6 +138,7 @@ class Agent:
         self._browser_navigation_tool: Optional[BrowserNavigationTool] = None
         self._browser_page_read_tool: Optional[BrowserPageReadTool] = None
         self._browser_interaction_tool: Optional[BrowserInteractionTool] = None
+        self._browser_screenshot_tool: Optional[BrowserScreenshotTool] = None
         
         logger.info(f"Agent initialized: {self.config.project_name} v{self.config.version}")
     
@@ -357,6 +359,19 @@ class Agent:
             max_wait_timeout=self.config.browser_max_wait_timeout,
         )
         self._tool_registry.register(self._browser_interaction_tool)
+        
+        self._browser_screenshot_tool = BrowserScreenshotTool(
+            browser_manager=self._browser_manager,
+            media_storage=self._media_storage,
+            browser_enabled=self.config.browser_screenshot_enabled and self.config.browser_automation_enabled,
+            max_screenshot_width=self.config.browser_max_screenshot_width,
+            max_screenshot_height=self.config.browser_max_screenshot_height,
+            max_full_page_height=self.config.browser_max_full_page_height,
+            max_screenshot_size_mb=self.config.browser_max_screenshot_size_mb,
+            max_screenshots_per_request=self.config.browser_max_screenshots_per_request,
+            screenshot_timeout=self.config.browser_screenshot_timeout,
+        )
+        self._tool_registry.register(self._browser_screenshot_tool)
         
         logger.info("Browser system initialized")
     
@@ -822,6 +837,7 @@ class Agent:
                 "max_sessions": self.config.browser_max_sessions,
                 "initialized": self._browser_manager is not None and self._browser_manager.initialized,
                 "page_read": "ENABLED" if self.config.browser_automation_enabled else "DISABLED",
+                "screenshot": "ENABLED" if (self.config.browser_screenshot_enabled and self.config.browser_automation_enabled) else "DISABLED",
             },
         }
         
@@ -900,6 +916,7 @@ class Agent:
         self._browser_navigation_tool = None
         self._browser_page_read_tool = None
         self._browser_interaction_tool = None
+        self._browser_screenshot_tool = None
         
         logger.info("Agent shutdown complete")
     

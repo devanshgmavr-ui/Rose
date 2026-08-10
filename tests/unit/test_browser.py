@@ -24,7 +24,7 @@ from agent.browser.permissions import (
     BROWSER_PERMISSIONS,
     BROWSER_PERMISSION_SCOPES,
 )
-from agent.browser.tools import BrowserSessionTool, BrowserNavigationTool, BrowserPageReadTool, BrowserInteractionTool
+from agent.browser.tools import BrowserSessionTool, BrowserNavigationTool, BrowserPageReadTool, BrowserInteractionTool, BrowserScreenshotTool
 
 
 # ============================================================
@@ -2463,3 +2463,963 @@ class TestInteractionPackageImports:
         from agent.browser.permissions import BROWSER_PERMISSIONS
         assert "browser.inspect" in BROWSER_PERMISSIONS
         assert "browser.interact" in BROWSER_PERMISSIONS
+
+
+# ============================================================
+# Stage 2.4.5 - Browser Screenshot Tests
+# ============================================================
+
+class TestScreenshotConfig:
+    def test_browser_screenshot_enabled_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_screenshot_enabled is False
+
+    def test_browser_max_screenshot_width_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_screenshot_width == 3840
+
+    def test_browser_max_screenshot_height_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_screenshot_height == 2160
+
+    def test_browser_max_full_page_height_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_full_page_height == 10000
+
+    def test_browser_max_screenshot_size_mb_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_screenshot_size_mb == 20
+
+    def test_browser_max_screenshots_per_request_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_screenshots_per_request == 10
+
+    def test_browser_screenshot_timeout_default(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_screenshot_timeout == 10000
+
+    @patch.dict("os.environ", {"BROWSER_SCREENSHOT_ENABLED": "true"})
+    def test_browser_screenshot_enabled_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_screenshot_enabled is True
+
+    @patch.dict("os.environ", {"BROWSER_MAX_SCREENSHOT_WIDTH": "1920"})
+    def test_browser_max_screenshot_width_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_screenshot_width == 1920
+
+    @patch.dict("os.environ", {"BROWSER_MAX_SCREENSHOT_HEIGHT": "1080"})
+    def test_browser_max_screenshot_height_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_screenshot_height == 1080
+
+    @patch.dict("os.environ", {"BROWSER_MAX_FULL_PAGE_HEIGHT": "5000"})
+    def test_browser_max_full_page_height_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_full_page_height == 5000
+
+    @patch.dict("os.environ", {"BROWSER_MAX_SCREENSHOT_SIZE_MB": "10"})
+    def test_browser_max_screenshot_size_mb_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_screenshot_size_mb == 10
+
+    @patch.dict("os.environ", {"BROWSER_MAX_SCREENSHOTS_PER_REQUEST": "5"})
+    def test_browser_max_screenshots_per_request_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_max_screenshots_per_request == 5
+
+    @patch.dict("os.environ", {"BROWSER_SCREENSHOT_TIMEOUT": "5000"})
+    def test_browser_screenshot_timeout_via_env(self):
+        from agent.core.config import Config
+        c = Config()
+        assert c.browser_screenshot_timeout == 5000
+
+
+class TestScreenshotPermissions:
+    def test_screenshot_permission_exists(self):
+        assert "browser.screenshot" in BROWSER_PERMISSIONS
+
+    def test_screenshot_permission_default_level(self):
+        assert BROWSER_PERMISSIONS["browser.screenshot"] == ConfirmationLevel.REQUIRE_CONFIRMATION
+
+    def test_screenshot_permission_scopes(self):
+        assert "browser.screenshot" in BROWSER_PERMISSION_SCOPES
+        assert "*" in BROWSER_PERMISSION_SCOPES["browser.screenshot"]
+
+    def test_register_screenshot_permission(self):
+        pm = PermissionManager()
+        register_browser_permissions(pm, browser_enabled=True)
+        assert pm.has_permission("browser.screenshot", "*")
+
+    def test_register_screenshot_not_when_disabled(self):
+        pm = PermissionManager()
+        register_browser_permissions(pm, browser_enabled=False)
+        assert not pm.has_permission("browser.screenshot", "*")
+
+
+class TestBrowserScreenshotTool:
+    def test_tool_name(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        assert tool.name == "browser_screenshot"
+
+    def test_tool_description(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        assert "screenshot" in tool.description.lower()
+        assert "viewport" in tool.description.lower()
+        assert "element" in tool.description.lower()
+
+    def test_tool_is_tool_subclass(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        assert isinstance(tool, Tool)
+
+    def test_required_permissions(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        assert tool.required_permissions == ["browser.screenshot"]
+
+    def test_confirmation_level_enabled(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        assert tool.confirmation_level == ConfirmationLevel.REQUIRE_CONFIRMATION
+
+    def test_confirmation_level_disabled(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=False,
+        )
+        assert tool.confirmation_level == ConfirmationLevel.DENY
+
+    def test_tool_timeout(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        assert tool.timeout == 60.0
+
+    def test_input_schema(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        schema = tool.input_schema
+        assert "action" in schema["properties"]
+        assert "session_id" in schema["properties"]
+        assert "type" in schema["properties"]
+        assert "index" in schema["properties"]
+        assert "selector" in schema["properties"]
+        assert "screenshot" in schema["properties"]["action"]["enum"]
+        assert set(schema["properties"]["type"]["enum"]) == {"viewport", "full_page", "element"}
+
+    def test_output_schema(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        schema = tool.output_schema
+        assert "success" in schema["properties"]
+        assert "screenshot_id" in schema["properties"]
+        assert "path" in schema["properties"]
+        assert "type" in schema["properties"]
+        assert "width" in schema["properties"]
+        assert "height" in schema["properties"]
+        assert "size_bytes" in schema["properties"]
+
+    def test_validate_disabled(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=False,
+        )
+        valid, errors = tool.validate({
+            "action": "screenshot",
+            "session_id": "s1",
+        })
+        assert valid is False
+        assert "disabled" in errors[0].lower()
+
+    def test_validate_invalid_action(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        valid, errors = tool.validate({
+            "action": "invalid",
+            "session_id": "s1",
+        })
+        assert valid is False
+        assert "Invalid action" in errors[0]
+
+    def test_validate_missing_session_id(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        valid, errors = tool.validate({
+            "action": "screenshot",
+        })
+        assert valid is False
+        assert "session_id is required" in errors[0]
+
+    def test_validate_invalid_type(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        valid, errors = tool.validate({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "invalid",
+        })
+        assert valid is False
+        assert "Invalid type" in errors[0]
+
+    def test_validate_valid_viewport(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        valid, errors = tool.validate({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "viewport",
+        })
+        assert valid is True
+        assert errors == []
+
+    def test_validate_valid_full_page(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        valid, errors = tool.validate({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "full_page",
+        })
+        assert valid is True
+
+    def test_validate_element_requires_target(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        valid, errors = tool.validate({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "element",
+        })
+        assert valid is False
+        assert "index or selector" in errors[0].lower()
+
+    def test_validate_element_with_index(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        valid, errors = tool.validate({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "element",
+            "index": 0,
+        })
+        assert valid is True
+
+    def test_validate_element_with_selector(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        valid, errors = tool.validate({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "element",
+            "selector": "#login-form",
+        })
+        assert valid is True
+
+    def test_validate_screenshot_limit(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+            max_screenshots_per_request=2,
+        )
+        tool._request_count = 2
+        valid, errors = tool.validate({
+            "action": "screenshot",
+            "session_id": "s1",
+        })
+        assert valid is False
+        assert "limit" in errors[0].lower()
+
+    def test_execute_session_not_found(self):
+        mock_manager = MagicMock()
+        mock_manager.get_session.return_value = None
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        result = tool.execute({
+            "action": "screenshot",
+            "session_id": "missing",
+        })
+        assert result.success is False
+        assert "not found" in result.error.lower()
+
+    def test_execute_session_closed(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = True
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        result = tool.execute({
+            "action": "screenshot",
+            "session_id": "s1",
+        })
+        assert result.success is False
+        assert "closed" in result.error.lower()
+
+    def test_execute_viewport_success(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_viewport.return_value = {
+            "success": True,
+            "path": "/tmp/test.png",
+            "type": "viewport",
+            "width": 1280,
+            "height": 720,
+            "size_bytes": 50000,
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        with patch("os.path.getsize", return_value=50000):
+            with patch("agent.browser.tools.BrowserScreenshotTool._validate_dimensions", return_value=(True, "")):
+                with patch("agent.browser.tools.BrowserScreenshotTool._validate_file_size", return_value=(True, "")):
+                    result = tool.execute({
+                        "action": "screenshot",
+                        "session_id": "s1",
+                        "type": "viewport",
+                    })
+        assert result.success is True
+        assert result.metadata["type"] == "viewport"
+        assert result.metadata["width"] == 1280
+        assert result.metadata["height"] == 720
+
+    def test_execute_fullpage_success(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_viewport.return_value = {
+            "success": True,
+            "path": "/tmp/test.png",
+            "type": "full_page",
+            "width": 1280,
+            "height": 4200,
+            "size_bytes": 200000,
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        with patch("os.path.getsize", return_value=200000):
+            with patch("agent.browser.tools.BrowserScreenshotTool._validate_dimensions", return_value=(True, "")):
+                with patch("agent.browser.tools.BrowserScreenshotTool._validate_file_size", return_value=(True, "")):
+                    result = tool.execute({
+                        "action": "screenshot",
+                        "session_id": "s1",
+                        "type": "full_page",
+                    })
+        assert result.success is True
+        assert result.metadata["type"] == "full_page"
+
+    def test_execute_element_success(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_element.return_value = {
+            "success": True,
+            "path": "/tmp/element.png",
+            "type": "element",
+            "width": 200,
+            "height": 100,
+            "size_bytes": 15000,
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        with patch("os.path.getsize", return_value=15000):
+            with patch("agent.browser.tools.BrowserScreenshotTool._validate_dimensions", return_value=(True, "")):
+                with patch("agent.browser.tools.BrowserScreenshotTool._validate_file_size", return_value=(True, "")):
+                    result = tool.execute({
+                        "action": "screenshot",
+                        "session_id": "s1",
+                        "type": "element",
+                        "index": 0,
+                    })
+        assert result.success is True
+        assert result.metadata["type"] == "element"
+        assert result.metadata["index"] == 0
+
+    def test_execute_element_with_selector(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_element.return_value = {
+            "success": True,
+            "path": "/tmp/element.png",
+            "type": "element",
+            "width": 200,
+            "height": 100,
+            "size_bytes": 15000,
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        with patch("os.path.getsize", return_value=15000):
+            with patch("agent.browser.tools.BrowserScreenshotTool._validate_dimensions", return_value=(True, "")):
+                with patch("agent.browser.tools.BrowserScreenshotTool._validate_file_size", return_value=(True, "")):
+                    result = tool.execute({
+                        "action": "screenshot",
+                        "session_id": "s1",
+                        "type": "element",
+                        "selector": "#login-form",
+                    })
+        assert result.success is True
+        assert result.metadata["selector"] == "#login-form"
+
+    def test_execute_screenshot_failure(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_viewport.return_value = {
+            "success": False,
+            "error": "Screenshot failed",
+            "code": "SCREENSHOT_FAILED",
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        result = tool.execute({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "viewport",
+        })
+        assert result.success is False
+        assert "Screenshot failed" in result.error
+
+    def test_execute_screenshot_timeout(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_viewport.return_value = {
+            "success": False,
+            "error": "Screenshot timed out",
+            "code": "TIMEOUT",
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        result = tool.execute({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "viewport",
+        })
+        assert result.success is False
+        assert "timed out" in result.error.lower()
+
+    def test_execute_element_not_found(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_element.return_value = {
+            "success": False,
+            "error": "Could not resolve target element",
+            "code": "INVALID_TARGET",
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        result = tool.execute({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "element",
+            "index": 99,
+        })
+        assert result.success is False
+        assert "target" in result.error.lower()
+
+    def test_execute_element_not_visible(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_element.return_value = {
+            "success": False,
+            "error": "Element is not visible",
+            "code": "NOT_VISIBLE",
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        result = tool.execute({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "element",
+            "selector": "#hidden",
+        })
+        assert result.success is False
+        assert "not visible" in result.error.lower()
+
+    def test_execute_element_stale(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_element.return_value = {
+            "success": False,
+            "error": "Element became detached from DOM",
+            "code": "STALE_ELEMENT",
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        result = tool.execute({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "element",
+            "index": 0,
+        })
+        assert result.success is False
+        assert "detached" in result.error.lower()
+
+    def test_execute_unexpected_exception(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_viewport.side_effect = RuntimeError("unexpected")
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        result = tool.execute({
+            "action": "screenshot",
+            "session_id": "s1",
+            "type": "viewport",
+        })
+        assert result.success is False
+        assert "Unexpected error" in result.error
+
+    def test_request_count_increments(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_viewport.return_value = {
+            "success": True,
+            "path": "/tmp/test.png",
+            "type": "viewport",
+            "width": 100,
+            "height": 100,
+            "size_bytes": 1000,
+        }
+        mock_manager.get_session.return_value = mock_session
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+            max_screenshots_per_request=3,
+        )
+        with patch("os.path.getsize", return_value=1000):
+            with patch("agent.browser.tools.BrowserScreenshotTool._validate_dimensions", return_value=(True, "")):
+                with patch("agent.browser.tools.BrowserScreenshotTool._validate_file_size", return_value=(True, "")):
+                    tool.execute({"action": "screenshot", "session_id": "s1"})
+                    tool.execute({"action": "screenshot", "session_id": "s1"})
+                    tool.execute({"action": "screenshot", "session_id": "s1"})
+        assert tool._request_count == 3
+        valid, errors = tool.validate({"action": "screenshot", "session_id": "s1"})
+        assert valid is False
+        assert "limit" in errors[0].lower()
+
+    def test_reset_request_count(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        tool._request_count = 5
+        tool.reset_request_count()
+        assert tool._request_count == 0
+
+    def test_dimensions_too_wide(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+            max_screenshot_width=1920,
+        )
+        valid, error = tool._validate_dimensions(3840, 1080, "viewport")
+        assert valid is False
+        assert "width" in error.lower()
+
+    def test_dimensions_too_tall_viewport(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+            max_screenshot_height=1080,
+        )
+        valid, error = tool._validate_dimensions(1920, 2160, "viewport")
+        assert valid is False
+        assert "height" in error.lower()
+
+    def test_dimensions_too_tall_fullpage(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+            max_full_page_height=5000,
+        )
+        valid, error = tool._validate_dimensions(1920, 10000, "full_page")
+        assert valid is False
+        assert "height" in error.lower()
+
+    def test_dimensions_valid(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+            max_screenshot_width=3840,
+            max_screenshot_height=2160,
+            max_full_page_height=10000,
+        )
+        valid, error = tool._validate_dimensions(1920, 1080, "viewport")
+        assert valid is True
+        assert error == ""
+
+    def test_file_size_too_large(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+            max_screenshot_size_mb=20,
+        )
+        valid, error = tool._validate_file_size(25 * 1024 * 1024)
+        assert valid is False
+        assert "size" in error.lower()
+
+    def test_file_size_valid(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+            max_screenshot_size_mb=20,
+        )
+        valid, error = tool._validate_file_size(1024 * 1024)
+        assert valid is True
+        assert error == ""
+
+
+class TestSessionScreenshot:
+    def _make_session_manager(self, closed=False):
+        session = BrowserSession(
+            session_id="screenshot_test",
+            created_at=time.time(),
+            headless=True,
+        )
+        mock_browser = MagicMock()
+        mock_context = MagicMock()
+        mock_page = MagicMock()
+        mgr = BrowserSessionManager(
+            session=session,
+            browser=mock_browser,
+            context=mock_context,
+            page=mock_page,
+        )
+        if closed:
+            mgr._closed = True
+        return mgr
+
+    def test_screenshot_viewport_closed_session(self):
+        mgr = self._make_session_manager(closed=True)
+        result = mgr.screenshot_viewport(path="/tmp/test.png")
+        assert result["success"] is False
+        assert result["code"] == "SESSION_CLOSED"
+
+    def test_screenshot_viewport_no_page(self):
+        mgr = self._make_session_manager()
+        mgr._page = None
+        result = mgr.screenshot_viewport(path="/tmp/test.png")
+        assert result["success"] is False
+        assert result["code"] == "NO_PAGE"
+
+    def test_screenshot_viewport_success(self):
+        mgr = self._make_session_manager()
+        with patch("os.path.getsize", return_value=50000):
+            with patch("PIL.Image.open") as mock_img:
+                mock_img.return_value.__enter__ = lambda s: s
+                mock_img.return_value.__exit__ = MagicMock(return_value=False)
+                mock_img.return_value.size = (1280, 720)
+                result = mgr.screenshot_viewport(path="/tmp/test.png")
+        assert result["success"] is True
+        assert result["type"] == "viewport"
+        assert result["width"] == 1280
+        assert result["height"] == 720
+        mgr._page.screenshot.assert_called_once_with(path="/tmp/test.png", full_page=False)
+
+    def test_screenshot_fullpage_success(self):
+        mgr = self._make_session_manager()
+        with patch("os.path.getsize", return_value=200000):
+            with patch("PIL.Image.open") as mock_img:
+                mock_img.return_value.__enter__ = lambda s: s
+                mock_img.return_value.__exit__ = MagicMock(return_value=False)
+                mock_img.return_value.size = (1280, 4200)
+                result = mgr.screenshot_viewport(path="/tmp/test.png", full_page=True)
+        assert result["success"] is True
+        assert result["type"] == "full_page"
+        mgr._page.screenshot.assert_called_once_with(path="/tmp/test.png", full_page=True)
+
+    def test_screenshot_viewport_playwright_error(self):
+        mgr = self._make_session_manager()
+        mgr._page.screenshot.side_effect = Exception("Playwright error")
+        result = mgr.screenshot_viewport(path="/tmp/test.png")
+        assert result["success"] is False
+        assert result["code"] == "SCREENSHOT_FAILED"
+
+    def test_screenshot_viewport_timeout(self):
+        mgr = self._make_session_manager()
+        mgr._page.screenshot.side_effect = Exception("Screenshot timed out")
+        result = mgr.screenshot_viewport(path="/tmp/test.png")
+        assert result["success"] is False
+        assert result["code"] == "SCREENSHOT_FAILED"
+
+    def test_screenshot_viewport_with_timeout_param(self):
+        mgr = self._make_session_manager()
+        mgr.screenshot_viewport(path="/tmp/test.png", timeout=5000)
+        mgr._page.screenshot.assert_called_once_with(path="/tmp/test.png", full_page=False, timeout=5000)
+
+    def test_screenshot_element_closed_session(self):
+        mgr = self._make_session_manager(closed=True)
+        result = mgr.screenshot_element(path="/tmp/el.png", index=0)
+        assert result["success"] is False
+        assert result["code"] == "SESSION_CLOSED"
+
+    def test_screenshot_element_no_page(self):
+        mgr = self._make_session_manager()
+        mgr._page = None
+        result = mgr.screenshot_element(path="/tmp/el.png", index=0)
+        assert result["success"] is False
+        assert result["code"] == "NO_PAGE"
+
+    def test_screenshot_element_invalid_target(self):
+        mgr = self._make_session_manager()
+        result = mgr.screenshot_element(path="/tmp/el.png", index=99)
+        assert result["success"] is False
+        assert result["code"] == "INVALID_TARGET"
+
+    def test_screenshot_element_not_visible(self):
+        mgr = self._make_session_manager()
+        mock_locator = MagicMock()
+        mock_locator.is_visible.return_value = False
+        mgr._page.locator.return_value.all.return_value = [mock_locator]
+        result = mgr.screenshot_element(path="/tmp/el.png", index=0)
+        assert result["success"] is False
+        assert result["code"] == "NOT_VISIBLE"
+
+    def test_screenshot_element_success(self):
+        mgr = self._make_session_manager()
+        mock_locator = MagicMock()
+        mock_locator.is_visible.return_value = True
+        mgr._page.locator.return_value.all.return_value = [mock_locator]
+        with patch("os.path.getsize", return_value=15000):
+            with patch("PIL.Image.open") as mock_img:
+                mock_img.return_value.__enter__ = lambda s: s
+                mock_img.return_value.__exit__ = MagicMock(return_value=False)
+                mock_img.return_value.size = (200, 100)
+                result = mgr.screenshot_element(path="/tmp/el.png", index=0)
+        assert result["success"] is True
+        assert result["type"] == "element"
+        assert result["width"] == 200
+        assert result["height"] == 100
+        mock_locator.screenshot.assert_called_once_with(path="/tmp/el.png")
+
+    def test_screenshot_element_by_selector(self):
+        mgr = self._make_session_manager()
+        mock_locator = MagicMock()
+        mock_locator.is_visible.return_value = True
+        mgr._page.locator.return_value.first = mock_locator
+        with patch("os.path.getsize", return_value=15000):
+            with patch("PIL.Image.open") as mock_img:
+                mock_img.return_value.__enter__ = lambda s: s
+                mock_img.return_value.__exit__ = MagicMock(return_value=False)
+                mock_img.return_value.size = (200, 100)
+                result = mgr.screenshot_element(path="/tmp/el.png", selector="#login")
+        assert result["success"] is True
+        mock_locator.screenshot.assert_called_once_with(path="/tmp/el.png")
+
+    def test_screenshot_element_stale_error(self):
+        mgr = self._make_session_manager()
+        mock_locator = MagicMock()
+        mock_locator.is_visible.return_value = True
+        mock_locator.screenshot.side_effect = Exception("Element became detached from DOM")
+        mgr._page.locator.return_value.all.return_value = [mock_locator]
+        with patch("os.path.getsize", return_value=0):
+            result = mgr.screenshot_element(path="/tmp/el.png", index=0)
+        assert result["success"] is False
+        assert result["code"] == "STALE_ELEMENT"
+
+    def test_screenshot_element_timeout_error(self):
+        mgr = self._make_session_manager()
+        mock_locator = MagicMock()
+        mock_locator.is_visible.return_value = True
+        mock_locator.screenshot.side_effect = Exception("Element screenshot timed out")
+        mgr._page.locator.return_value.all.return_value = [mock_locator]
+        with patch("os.path.getsize", return_value=0):
+            result = mgr.screenshot_element(path="/tmp/el.png", index=0)
+        assert result["success"] is False
+        assert result["code"] == "SCREENSHOT_FAILED"
+
+
+class TestScreenshotRouterIntegration:
+    def test_screenshot_tool_through_router_disabled(self):
+        mock_manager = MagicMock()
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=False,
+        )
+        registry = ToolRegistry()
+        registry.register(tool)
+        pm = PermissionManager()
+        audit = AuditLogger(log_dir="logs")
+        router = ToolRouter(
+            registry=registry,
+            permission_manager=pm,
+            audit_logger=audit,
+        )
+        result = router.execute_tool("browser_screenshot", {
+            "action": "screenshot",
+            "session_id": "s1",
+        })
+        assert result.success is False
+
+    def test_screenshot_tool_through_router_enabled(self):
+        mock_manager = MagicMock()
+        mock_session = MagicMock()
+        mock_session.is_closed = False
+        mock_session.screenshot_viewport.return_value = {
+            "success": True,
+            "path": "/tmp/test.png",
+            "type": "viewport",
+            "width": 1280,
+            "height": 720,
+            "size_bytes": 50000,
+        }
+        mock_manager.get_session.return_value = mock_session
+
+        tool = BrowserScreenshotTool(
+            browser_manager=mock_manager,
+            browser_enabled=True,
+        )
+        registry = ToolRegistry()
+        registry.register(tool)
+        pm = PermissionManager()
+        register_browser_permissions(pm, browser_enabled=True)
+        audit = AuditLogger(log_dir="logs")
+        router = ToolRouter(
+            registry=registry,
+            permission_manager=pm,
+            audit_logger=audit,
+        )
+        with patch("os.path.getsize", return_value=50000):
+            with patch("agent.browser.tools.BrowserScreenshotTool._validate_dimensions", return_value=(True, "")):
+                with patch("agent.browser.tools.BrowserScreenshotTool._validate_file_size", return_value=(True, "")):
+                    req = ToolRequest(
+                        tool="browser_screenshot",
+                        arguments={"action": "screenshot", "session_id": "s1"},
+                    )
+                    result = router.route(req)
+        assert result.success is True
+        assert result.metadata["type"] == "viewport"
+
+
+class TestScreenshotPackageImports:
+    def test_import_browser_screenshot_tool(self):
+        from agent.browser import BrowserScreenshotTool
+        assert BrowserScreenshotTool is not None
+
+    def test_import_from_tools_module(self):
+        from agent.browser.tools import BrowserScreenshotTool
+        assert BrowserScreenshotTool is not None
+
+    def test_all_exports(self):
+        from agent.browser import __all__
+        assert "BrowserScreenshotTool" in __all__
+
+    def test_permissions_module_updated(self):
+        from agent.browser.permissions import BROWSER_PERMISSIONS
+        assert "browser.screenshot" in BROWSER_PERMISSIONS
+
+    def test_screenshot_permission_scopes(self):
+        from agent.browser.permissions import BROWSER_PERMISSION_SCOPES
+        assert "browser.screenshot" in BROWSER_PERMISSION_SCOPES

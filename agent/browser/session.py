@@ -1,6 +1,6 @@
 """Browser session management.
 
-Stage 2.4.4 - Browser interaction support.
+Stage 2.4.5 - Browser screenshot support.
 
 Manages a single isolated Playwright browser session.
 Each session uses its own BrowserContext with no access
@@ -10,6 +10,11 @@ to user profiles, cookies, or credentials.
 import time
 import logging
 from typing import Optional, Any, Dict, List
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 from .models import BrowserSession, BrowserPage, SessionStatus
 
@@ -441,6 +446,111 @@ class BrowserSessionManager:
             if "timeout" in error_msg.lower():
                 return {"success": False, "error": "Wait timed out", "code": "TIMEOUT"}
             return {"success": False, "error": f"Wait failed: {error_msg}", "code": "WAIT_FAILED"}
+
+    def screenshot_viewport(
+        self,
+        path: str,
+        full_page: bool = False,
+        timeout: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Capture a screenshot of the current viewport or full page.
+
+        Args:
+            path: File path to save the screenshot (PNG).
+            full_page: If True, capture the full scrollable page.
+            timeout: Optional timeout in milliseconds.
+
+        Returns:
+            Dict with success, path, width, height, size_bytes or error.
+        """
+        if self._closed:
+            return {"success": False, "error": "Session is closed", "code": "SESSION_CLOSED"}
+        if not self._page:
+            return {"success": False, "error": "No page available", "code": "NO_PAGE"}
+        try:
+            kwargs = {"path": path, "full_page": full_page}
+            if timeout is not None:
+                kwargs["timeout"] = timeout
+            self._page.screenshot(**kwargs)
+            import os
+            size_bytes = os.path.getsize(path)
+            try:
+                from PIL import Image
+                with Image.open(path) as img:
+                    width, height = img.size
+            except Exception:
+                width = 0
+                height = 0
+            return {
+                "success": True,
+                "path": path,
+                "type": "full_page" if full_page else "viewport",
+                "width": width,
+                "height": height,
+                "size_bytes": size_bytes,
+            }
+        except Exception as e:
+            error_msg = str(e)
+            if "timeout" in error_msg.lower():
+                return {"success": False, "error": "Screenshot timed out", "code": "TIMEOUT"}
+            return {"success": False, "error": f"Screenshot failed: {error_msg}", "code": "SCREENSHOT_FAILED"}
+
+    def screenshot_element(
+        self,
+        path: str,
+        index: Optional[int] = None,
+        selector: Optional[str] = None,
+        timeout: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Capture a screenshot of a specific page element.
+
+        Args:
+            path: File path to save the screenshot (PNG).
+            index: Element index from inspect_page results.
+            selector: CSS selector for targeting an element.
+            timeout: Optional timeout in milliseconds.
+
+        Returns:
+            Dict with success, path, width, height, size_bytes or error.
+        """
+        if self._closed:
+            return {"success": False, "error": "Session is closed", "code": "SESSION_CLOSED"}
+        if not self._page:
+            return {"success": False, "error": "No page available", "code": "NO_PAGE"}
+        try:
+            loc = self._resolve_locator(index, selector)
+            if loc is None:
+                return {"success": False, "error": "Could not resolve target element", "code": "INVALID_TARGET"}
+            if not loc.is_visible():
+                return {"success": False, "error": "Element is not visible", "code": "NOT_VISIBLE"}
+            kwargs = {"path": path}
+            if timeout is not None:
+                kwargs["timeout"] = timeout
+            loc.screenshot(**kwargs)
+            import os
+            size_bytes = os.path.getsize(path)
+            try:
+                from PIL import Image
+                with Image.open(path) as img:
+                    width, height = img.size
+            except Exception:
+                width = 0
+                height = 0
+            return {
+                "success": True,
+                "path": path,
+                "type": "element",
+                "width": width,
+                "height": height,
+                "size_bytes": size_bytes,
+            }
+        except Exception as e:
+            error_msg = str(e)
+            if "timeout" in error_msg.lower():
+                return {"success": False, "error": "Element screenshot timed out", "code": "TIMEOUT"}
+            if "detached" in error_msg.lower():
+                return {"success": False, "error": "Element became detached from DOM", "code": "STALE_ELEMENT"}
+            return {"success": False, "error": f"Element screenshot failed: {error_msg}", "code": "SCREENSHOT_FAILED"}
 
     def update_state(self):
         if self._closed:
