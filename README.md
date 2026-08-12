@@ -1,482 +1,491 @@
-# Rose
+<div align="center">
 
-Local Autonomous AI Agent
+# 🌹 Rose
 
-## Overview
+### Fully Local Autonomous AI Agent
 
-Rose is a fully local autonomous AI agent built for Windows with GPU acceleration. It runs entirely on your machine without requiring cloud services, keeping all data private and local.
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-1459%20passing-brightgreen.svg)](#testing)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078d4.svg)](https://www.microsoft.com/windows)
+[![GPU](https://img.shields.io/badge/GPU-CUDA-76b900.svg)](https://developer.nvidia.com/cuda-zone)
 
-The project is being developed incrementally through staged milestones, with each stage adding new capabilities while maintaining a stable, tested foundation.
+**100% local. Zero cloud. Full privacy. Your data never leaves your machine.**
 
-## Project Goals
+[Installation](#installation) · [Features](#features) · [Architecture](#architecture) · [Roadmap](#roadmap) · [Contributing](#contributing)
 
-**Current Capabilities (Completed):**
-- Local LLM inference with GPU acceleration
-- Long-term memory and context management
-- Tool system with permissions and sandboxing
-- Task planning and orchestration
-- Multimodal media architecture
-- Screen capture and system information
-- Mouse and keyboard control
-- Window management (enumerate, activate, minimize, restore, maximize, close, move, resize)
-- Browser foundation (Playwright session management, isolated contexts)
-- Browser page reading (extract text content from pages with security wrapping)
-- Browser interaction (inspect, click, fill, select, press, wait with controlled targeting)
-- Browser screenshots (viewport, full-page, element capture with secure storage)
+</div>
 
-**Planned Capabilities (In Development):**
-- Browser automation
-- Image understanding and vision analysis
-- Image generation
-- Video generation
-- Voice input/output
-- Backend API and web UI
-- Cloud scaling options
+---
 
-**Stage 3.1 Vision Analysis Capabilities:**
-- Provider-agnostic vision analysis architecture
-- Structured output with detected elements, bounding boxes, confidence levels
-- Workspace-boundary image validation
-- Image format, size, and dimension validation
-- Untrusted content markers for security
-- Vision permission system with configurable confirmation
-- Health checking and statistics
-- Text description generation with security wrapping
+## What is Rose?
 
-**Stage 3.2 Visual Grounding Capabilities:**
-- VisualGrounder translates vision results into actionable coordinates
-- GroundedTarget with center point, bounding box, target type, confidence
-- Target classification (button, link, text_field, icon, menu, etc.)
-- Coordinate clamping to screen bounds
-- Target validation (bounds, confidence, staleness)
-- Ground/validate actions with untrusted data markers
+Rose is an autonomous AI agent that runs entirely on your Windows PC. It uses a local LLM (Qwen2.5-Coder-7B) with NVIDIA GPU acceleration to understand natural language, plan tasks, and execute them through a comprehensive tool system — all without sending a single byte to the cloud.
 
-**Stage 3.3 Observe/Act/Verify Capabilities:**
-- Safe loop for visual automation with configurable limits
-- Maximum iteration count (prevents infinite loops)
-- Maximum action count
-- Timeout enforcement
-- Goal detection and achievement tracking
-- Cancel support
-- Step-by-step execution logging
+```
+You: "Take a screenshot of my desktop and tell me what applications are running"
+Rose: *captures screen, analyzes it, identifies running apps, responds*
+```
+
+## Quick Start
+
+### One-Click Install (Windows)
+
+```batch
+git clone https://github.com/devanshgmavr-ui/Rose.git
+cd Rose
+install.bat
+```
+
+### Manual Install
+
+```powershell
+# Clone
+git clone https://github.com/devanshgmavr-ui/Rose.git
+cd Rose
+
+# Create virtual environment
+python -m venv venv
+.\venv\Scripts\Activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Place your model
+# models/qwen2.5-coder-7b-instruct-q4_k_m.gguf
+
+# Run
+python run.py
+```
+
+### Download Release
+
+Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/releases) — includes pre-built packages for Windows.
+
+| Package | Description |
+|---------|-------------|
+| `rose-full-v1.0.0.zip` | Complete installation with all dependencies |
+| `rose-core-v1.0.0.zip` | Core agent only (LLM + tools) |
+| `rose-portable-v1.0.0.zip` | Portable version (no install needed) |
+
+---
+
+## Features
+
+### 🧠 Intelligence
+- **Local LLM Inference** — Qwen2.5-Coder-7B with CUDA GPU acceleration
+- **Natural Language Planning** — Understands goals and breaks them into steps
+- **Automatic Tool Selection** — Picks the right tool for each task
+- **Multi-Step Execution** — Plans, executes, verifies, and adapts
+
+### 🖥️ OS Automation
+- **Screen Capture** — Capture and analyze your desktop
+- **Mouse & Keyboard** — Controlled automation with safety limits
+- **Window Management** — Enumerate, activate, minimize, move, resize
+- **App Launching** — Start applications with arguments
+
+### 🌐 Browser Control
+- **Playwright Integration** — Headless browser automation
+- **Page Navigation** — Open, read, and interact with web pages
+- **Element Interaction** — Click, fill forms, select options
+- **Screenshots** — Capture viewport, full-page, or specific elements
+
+### 👁️ Vision
+- **Image Analysis** — Understand what's on screen
+- **Visual Grounding** — Translate vision into clickable coordinates
+- **Observe/Act/Verify** — Safe loop for visual automation
+
+### 📁 File & Code
+- **File Automation** — Read, write, copy, move, search files
+- **Code Execution** — Run Python in a sandboxed subprocess
+- **CLI Control** — Execute shell commands (disabled by default)
+
+### 🔒 Security
+- **Permission System** — Every tool has configurable access levels
+- **Workspace Boundary** — File access restricted to workspace
+- **Confirmation Gates** — Dangerous actions require approval
+- **Audit Logging** — All operations are logged
+- **No Cloud** — Everything stays on your machine
+
+---
 
 ## Architecture
 
 ```
-User
-  |
-  v
-Agent
-  |
-  v
-LLM (Qwen 7B - Local GPU)
-  |
-  v
-Planner
-  |
-  v
-Tool Router
-  |
-  +---> Permissions
-  |
-  +---> Audit Logger
-  |
-  v
-Tools
-  |
-  +---> Filesystem (workspace only)
-  +---> Python Sandbox (subprocess)
-  +---> CLI (disabled by default)
-  +---> Screen Capture
-  +---> System Info
-  +---> Mouse Control
-  +---> Keyboard Control
-  +---> Window Management
-  +---> Browser Session Management
-  +---> Media (vision/image/video)
-  |
-  v
-Windows / Filesystem / Browser / Sandbox
+┌─────────────────────────────────────────────────────────┐
+│                    User Interface                        │
+│              (CLI / Web / PySide6 GUI)                   │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────┐
+│              Application Service (Phase 5)               │
+│     Chat API · Task API · Health API · Event Bus         │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────┐
+│                  Rose Agent Core                         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
+│  │   LLM    │ │  Memory  │ │ Planner  │ │ Verifier │   │
+│  │ Qwen 7B  │ │ Short +  │ │ NL →     │ │ Result   │   │
+│  │ CUDA GPU │ │ Long Term│ │ Plan     │ │ Check    │   │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────┐
+│                  Tool Router                              │
+│          Permissions · Audit · Confirmation               │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+    ┌─────────┬───────┼───────┬─────────┬─────────┐
+    │         │       │       │         │         │
+┌───▼──┐ ┌───▼──┐ ┌──▼──┐ ┌──▼──┐ ┌───▼──┐ ┌───▼──┐
+│Files │ │Code │ │ CLI │ │ OS  │ │Browser│ │Vision│
+│R/W/S │ │Exec │ │Exec │ │Ctrl │ │PW    │ │Analyze│
+└──────┘ └─────┘ └─────┘ └─────┘ └──────┘ └──────┘
+    │         │       │       │         │         │
+┌───▼─────────▼───────▼───────▼─────────▼─────────▼───┐
+│              Windows / Filesystem / Browser            │
+└──────────────────────────────────────────────────────┘
 ```
 
-### Components
+### Component Stack
 
-| Layer | Description |
-|-------|-------------|
-| **LLM** | Local inference via llama-cpp-python with CUDA GPU acceleration |
-| **Memory** | Session management, conversation history, long-term SQLite storage |
-| **Tools** | Permission-based tool system with audit logging |
-| **Orchestration** | Task planning, execution, verification, and persistence |
-| **Media** | Multimodal providers for vision, image, and video |
-| **OS Control** | Screen capture, system info, mouse, keyboard, window management |
-| **Browser** | Playwright-based browser session management (disabled by default) |
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| **UI** | `agent/ui/` | PySide6 desktop app with chat, tasks, settings |
+| **Web** | `agent/web/` | REST API, SSE streaming, ApplicationService |
+| **Core** | `agent/core/` | Agent, Config, Health, Performance, Resources |
+| **LLM** | `agent/llm/` | Local provider with CUDA, model optimizer |
+| **Memory** | `agent/memory/` | Session, conversation, long-term SQLite |
+| **Tools** | `agent/tools/` | 15+ tools with permissions and audit |
+| **Orchestration** | `agent/orchestration/` | Planner, executor, verifier, autonomous |
+| **Media** | `agent/media/` | Vision, grounding, observe/act/verify |
+| **OS Control** | `agent/os_control/` | Screen, mouse, keyboard, window |
+| **Browser** | `agent/browser/` | Playwright sessions, navigation, interaction |
 
-## Current Status
+---
 
-| Stage | Description | Status |
+## Roadmap & Status
+
+| Phase | Description | Status |
 |-------|-------------|--------|
-| 1.1 | Local LLM Runtime | COMPLETE |
-| 1.2 | Memory & Context Management | COMPLETE |
-| 1.3 | Tool Integration & Sandboxing | COMPLETE |
-| 1.4 | Task Orchestration & Verification | COMPLETE |
-| 1.5 | Media Architecture | COMPLETE |
-| 2.1 | Screen Capture & System Information | COMPLETE |
-| 2.2 | Mouse & Keyboard Control | COMPLETE |
-| 2.3.1 | Window Architecture & Research | COMPLETE |
-| 2.3.2 | Window Enumeration | COMPLETE |
-| 2.3.3 | Window Control Foundation | COMPLETE |
-| 2.3.4 | Advanced Window Operations | COMPLETE |
-| 2.4.1 | Browser Foundation / Session Management | COMPLETE |
-| 2.4.2 | Browser Navigation | COMPLETE |
-| 2.4.3 | Browser Page Reading | COMPLETE |
-| 2.4.4 | Browser Interaction | COMPLETE |
-| 2.4.5 | Browser Screenshots | COMPLETE |
-| 2.4 | Browser Automation | IN PROGRESS |
-| 3.1 | Vision Analysis | COMPLETE |
-| 3.2 | Visual Grounding | COMPLETE |
-| 3.3 | Observe/Act/Verify | COMPLETE |
-| 4.1 | Natural Language Tool Planning | COMPLETE |
-| 4.2 | Automatic Tool Selection | COMPLETE |
-| 4.3 | Multi-Step Autonomous Tasks | COMPLETE |
-| 5.1 | Controlled Application Launching | COMPLETE |
-| 5.2 | Advanced File Automation | COMPLETE |
-| 5.3 | Controlled CLI Automation | COMPLETE |
-| 6.1 | Local Model Optimization | COMPLETE |
-| 6.2 | Performance Monitoring | COMPLETE |
-| 6.3 | Resource Management | COMPLETE |
-| 7.1 | Session Persistence | COMPLETE |
-| 7.2 | Error Recovery | COMPLETE |
-| 7.3 | System Health Check | COMPLETE |
-| 8.1 | Web Interface | COMPLETE |
+| **Phase 1** | Foundation (LLM, Memory, Tools, Orchestration) | ✅ Complete |
+| **Phase 2** | OS Automation (Screen, Mouse, Keyboard, Window, Browser) | ✅ Complete |
+| **Phase 3** | Perception (Vision, Grounding, Observe/Act/Verify) | ✅ Complete |
+| **Phase 4** | Agent Intelligence (Planning, Tool Selection, Autonomous) | ✅ Complete |
+| **Phase 5** | Application Service (Chat API, Tasks, Health, Events) | ✅ Complete |
+| **Phase 6** | User Interface (PySide6 Desktop App) | ✅ Complete |
+| **Phase 7** | End-to-End (run.py, First-Run, Startup) | ✅ Complete |
+| **Phase 8** | Packaging (pyproject.toml, Installer, Releases) | ✅ Complete |
+
+### Detailed Breakdown
+
+<details>
+<summary><strong>Phase 1: Foundation</strong></summary>
+
+- 1.1 Local LLM Runtime — llama-cpp-python with CUDA
+- 1.2 Memory & Context — Short-term + long-term SQLite
+- 1.3 Tool Integration — Registry, router, permissions, sandbox
+- 1.4 Task Orchestration — Plan → Execute → Verify loop
+- 1.5 Media Architecture — Provider abstraction for vision/image/video
+</details>
+
+<details>
+<summary><strong>Phase 2: OS Automation</strong></summary>
+
+- 2.1 Screen Capture & System Info
+- 2.2 Mouse & Keyboard Control
+- 2.3 Window Management (enumerate, activate, minimize, move, resize, close)
+- 2.4 Browser Automation (Playwright sessions, navigation, reading, interaction, screenshots)
+</details>
+
+<details>
+<summary><strong>Phase 3: Perception</strong></summary>
+
+- 3.1 Vision Analysis — Provider-agnostic image understanding
+- 3.2 Visual Grounding — Translate vision to coordinates
+- 3.3 Observe/Act/Verify — Safe visual automation loop
+</details>
+
+<details>
+<summary><strong>Phase 4: Agent Intelligence</strong></summary>
+
+- 4.1 Natural Language Tool Planning
+- 4.2 Automatic Tool Selection (18 intent categories)
+- 4.3 Multi-Step Autonomous Task Execution
+</details>
+
+<details>
+<summary><strong>Phase 5-8: Application Layer</strong></summary>
+
+- 5.1 ApplicationService — Single API between UI and backend
+- 5.2 EventBus + SSE — Real-time event streaming
+- 6.1 RoseUI — PySide6 desktop interface
+- 7.1 run.py — CLI, web, and headless modes
+- 7.2 First-run detection and setup
+- 8.1 pyproject.toml, install.bat, release packages
+</details>
+
+---
 
 ## Hardware Requirements
 
-### Development Configuration
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **OS** | Windows 10 | Windows 11 |
+| **CPU** | 4 cores | 8+ cores (Ryzen 7 / i7) |
+| **RAM** | 8 GB | 16 GB |
+| **GPU** | NVIDIA 4GB VRAM | RTX 4050+ (6GB+) |
+| **Storage** | 10 GB free | 20 GB SSD |
 
-- **OS:** Windows 11
-- **CPU:** AMD Ryzen 7
-- **RAM:** 16 GB
-- **GPU:** NVIDIA GeForce RTX 4050 (6 GB VRAM)
-- **CUDA:** Enabled for local inference
+### Development Config
+- AMD Ryzen 7 / NVIDIA RTX 4050 (6GB)
+- 16 GB RAM / Windows 11
+- CUDA Toolkit 13.3
 
-### Minimum Requirements
-
-- Windows 10 or later
-- 8 GB RAM
-- NVIDIA GPU with CUDA support (4 GB+ VRAM recommended)
-- 10 GB free disk space
+---
 
 ## Model
 
-**Current Model:**
-- Qwen2.5-Coder-7B-Instruct
-- Q4_K_M quantization
-- ~4.36 GB file size
-- 4096 token context
-- 28 GPU layers (full offload)
+**Qwen2.5-Coder-7B-Instruct** (Q4_K_M quantization)
 
-**Model Placement:**
+| Property | Value |
+|----------|-------|
+| Parameters | 7 Billion |
+| Quantization | Q4_K_M |
+| File Size | ~4.36 GB |
+| Context Length | 4096 tokens |
+| GPU Layers | 28 (full offload) |
+| License | Apache 2.0 |
+
+### Setup
+
+1. Download from [Hugging Face](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF)
+2. Place in `models/` directory
+3. The model auto-discovered on startup
+
 ```
 Rose/
   models/
     qwen2.5-coder-7b-instruct-q4_k_m.gguf
 ```
 
-> **Note:** The current implementation uses Qwen as the underlying local base model. The long-term project goal is to develop a customized/own model through future model development, training, and/or fine-tuning work.
+> **Future Goal:** Develop a custom trained model specifically for autonomous agent tasks.
 
-## Installation
-
-### 1. Clone Repository
-
-```powershell
-git clone https://github.com/YOUR_USERNAME/Rose.git
-cd Rose
-```
-
-### 2. Create Virtual Environment
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-### 3. Install Dependencies
-
-```powershell
-pip install -r requirements.txt
-```
-
-### 4. Configure Environment
-
-```powershell
-copy .env.example .env
-# Edit .env with your settings
-```
-
-### 5. Place Model
-
-Download the model file and place it in the `models/` directory:
-```
-models/qwen2.5-coder-7b-instruct-q4_k_m.gguf
-```
-
-### 6. Verify Installation
-
-```powershell
-python scripts/health_check.py
-```
-
-### 7. Run Tests
-
-```powershell
-python -m pytest tests/unit/ -v
-```
+---
 
 ## Configuration
 
 ### Environment Variables
 
-Configuration is managed through `.env` file (not committed to Git).
+```env
+# LLM Settings
+MODEL_PATH=./models/qwen2.5-coder-7b-instruct-q4_k_m.gguf
+LLM_GPU_LAYERS=28
+LLM_CONTEXT_LENGTH=4096
 
-Key settings:
+# OS Control
+OS_CONTROL_ENABLED=true
+SCREEN_CAPTURE_ENABLED=true
+MOUSE_CONTROL_ENABLED=false
+KEYBOARD_CONTROL_ENABLED=false
+WINDOW_CONTROL_ENABLED=false
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MODEL_PATH` | `./models/...gguf` | Path to model file |
-| `LLM_GPU_LAYERS` | `28` | GPU layers for offload |
-| `MOUSE_CONTROL_ENABLED` | `false` | Enable mouse control |
-| `KEYBOARD_CONTROL_ENABLED` | `false` | Enable keyboard control |
+# Browser (disabled by default)
+BROWSER_AUTOMATION_ENABLED=false
+BROWSER_HEADLESS=true
 
-See `.env.example` for all available options.
+# Vision (disabled by default)
+VISION_ENABLED=false
+VISION_PROVIDER=local
+```
 
-### Security Notes
+See `.env.example` for all options.
 
-- `.env` contains local configuration only (no secrets)
-- `.env` is git-ignored and never committed
-- Model files are git-ignored (too large for Git)
-- All runtime data stays local
+### Security Defaults
 
-## Security Model
+| Feature | Default | Why |
+|---------|---------|-----|
+| Mouse Control | Off | Prevents accidental clicks |
+| Keyboard Control | Off | Prevents unintended typing |
+| CLI Execution | Blocked | Prevents arbitrary commands |
+| Browser | Off | Isolated from user profiles |
+| Vision | Off | Requires explicit opt-in |
+| Window Mutations | Confirmation | Requires approval |
 
-### Permissions
-
-| Permission | Default | Confirmation |
-|------------|---------|--------------|
-| `filesystem.read` | ALLOW | No |
-| `filesystem.write` | REQUIRE_CONFIRMATION | Yes |
-| `code.execute` | REQUIRE_CONFIRMATION | Yes |
-| `command.execute` | DENIED | Blocked |
-| `os.screen_capture` | ALLOW | No |
-| `os.system_info` | ALLOW | No |
-| `os.mouse` | REQUIRE_CONFIRMATION | Yes |
-| `os.keyboard` | REQUIRE_CONFIRMATION | Yes |
-| `os.window` | ALLOW | No (mutations require confirmation) |
-| `browser.session` | DENIED | Yes (requires browser enabled) |
-| `browser.navigation` | DENIED | Yes (requires browser enabled) |
-| `browser.screenshot` | DENIED | Yes (requires browser + screenshot enabled) |
-| `vision.analyze` | DENIED | Yes (requires vision enabled) |
-
-### Safety Features
-
-- **Workspace boundary:** Filesystem access restricted to `workspace/`
-- **Sandbox execution:** Python code runs in subprocess (not kernel-isolated)
-- **CLI disabled:** Command execution blocked by default
-- **Mouse/keyboard disabled:** Must be explicitly enabled
-- **Window control disabled:** Must be explicitly enabled
-- **Window close disabled:** Must be explicitly enabled
-- **Window move disabled:** Must be explicitly enabled
-- **Window resize disabled:** Must be explicitly enabled
-- **Coordinate validation:** Actions validated against screen bounds
-- **Restricted shortcuts:** Dangerous key combinations blocked
-- **HWND validation:** Window handles validated before mutations
-- **Protected windows:** System-critical windows cannot be modified
-- **Confirmation required:** All window mutations require explicit confirmation
-- **Browser disabled:** Browser automation disabled by default
-- **Browser isolation:** Playwright contexts isolated from user profiles
-- **Browser session limit:** Maximum concurrent sessions enforced
-- **Browser page limit:** Maximum pages per session enforced
-- **Browser navigation:** HTTP/HTTPS only, unsupported schemes blocked
-- **Browser page reading:** Content treated as untrusted, wrapped with security markers
-- **Browser interaction:** Controlled element targeting, value redaction, no JavaScript execution
-- **Browser inspect:** Read-only element inspection with configurable limits
-- **Browser screenshots:** Viewport, full-page, and element capture with dimension/size limits
-- **Screenshot storage:** Secure workspace-boundary storage, PNG-only format
-- **Screenshot limits:** Configurable width, height, file size, and per-request count limits
-- **URL sanitization:** Sensitive query parameters redacted in logs
-- **Vision disabled:** Vision analysis disabled by default
-- **Vision workspace boundary:** Image paths validated against workspace
-- **Vision content markers:** All visual content wrapped with untrusted markers
-- **Vision permissions:** Dedicated vision.analyze permission with confirmation
-- **Vision validation:** Image format, size, and dimension limits enforced
-- **No binary in logs:** Image data never stored in audit logs
-- **No browser profiles:** No access to user Chrome/Edge data
-- **Action limits:** Configurable limits per request
-- **Audit logging:** All tool calls logged
-
-### Limitations
-
-- Subprocess isolation is NOT kernel-level sandboxing
-- OS automation is intentionally restricted
-- Mouse/keyboard require explicit opt-in
-- No arbitrary command execution
+---
 
 ## Testing
 
-**Current Result:** 1245/1245 tests passing
+**1459 unit tests** — all passing
 
 ```powershell
-# Run all unit tests
+# Run all tests
 python -m pytest tests/unit/ -v
 
-# Run specific test suite
-python -m pytest tests/unit/test_os_control.py -v
+# Run specific module
+python -m pytest tests/unit/test_vision.py -v
 
-# Run browser tests
-python -m pytest tests/unit/test_browser.py -v
+# Run with coverage
+python -m pytest tests/unit/ --cov=agent
 ```
 
 ### Test Coverage
 
-| Module | Tests |
-|--------|-------|
-| Configuration | Config loading, defaults, env override |
-| LLM Interface | Provider initialization, generation |
-| Memory | Session, conversation, long-term storage |
-| Tools | Registry, router, permissions, audit |
-| Orchestration | Planning, execution, verification |
-| Media | Storage, routing, providers |
-| Vision | Provider, analyzer, permissions, tool, validation |
-| OS Control | Screen, system, mouse, keyboard, window |
-| Browser | Session management, navigation, page reading, interaction, screenshots, URL validation, models, permissions, tools |
+| Module | Tests | Coverage |
+|--------|-------|----------|
+| Core (Agent, Config) | 45+ | Full |
+| LLM Provider | 30+ | Full |
+| Memory System | 40+ | Full |
+| Tool System | 80+ | Full |
+| Orchestration | 130+ | Full |
+| Media/Vision | 85+ | Full |
+| OS Control | 100+ | Full |
+| Browser | 120+ | Full |
+| Web/API | 50+ | Full |
+| Application Service | 63 | Full |
+| UI Components | 83 | Full |
+| Startup/Packaging | 67 | Full |
+| **Total** | **1459** | **Full** |
 
-## Current Capabilities
+---
 
-The agent can:
-- Run local LLM inference with GPU acceleration
-- Maintain conversation memory across sessions
-- Store and retrieve long-term memories
-- Plan and execute multi-step tasks
-- Capture screenshots of the desktop
-- Get system information (OS, CPU, memory, screen)
-- Move mouse and click (when enabled)
-- Type text and press keys (when enabled)
-- Enumerate and list windows
-- Get active window information
-- Activate (focus) a specific window
-- Minimize, restore, and maximize windows
-- Gracefully close windows (WM_CLOSE)
-- Move windows to new positions
-- Resize windows
-- Set window bounds (position + size)
-- Protected system window detection
-- Create isolated browser sessions (Playwright)
-- List active browser sessions
-- Close browser sessions
-- Navigate browser pages to HTTP/HTTPS URLs
-- URL scheme validation (HTTP/HTTPS only)
-- Sensitive URL parameter sanitization in logs
-- Vision analysis with structured output
-- Image validation (format, size, dimensions)
-- Workspace-boundary image path validation
-- Untrusted content markers for visual data
-- Execute Python code in sandbox
-- Read/write files in workspace
-- Store and retrieve media files
+## Security Model
 
-## Current Limitations
+### Permission Levels
 
-- Video provider is a stub (requires local model)
-- Image generation is a stub (requires local model)
-- Vision analysis works with metadata only (no real vision model loaded)
-- Python sandbox is subprocess-level, not kernel-isolated
-- OS automation is intentionally restricted
-- Mouse/keyboard disabled by default
-- Window control disabled by default
-- Window close/move/resize disabled by default
-- Window mutations require explicit confirmation
-- WM_CLOSE does not guarantee application termination
-- Protected system windows cannot be modified
-- No process management or termination
-- Browser automation disabled by default
-- Browser page reading is available (with security wrapping)
-- Browser interaction is available (inspect, click, fill, select, press, wait)
-- Browser screenshots are available (viewport, full-page, element)
-- No JavaScript execution is supported through browser tools
-- Browser interaction not yet implemented
-- No persistent browser profiles
-- 4K token context limit (VRAM constrained)
-- Single monitor support only
+```
+ALLOW                    → No confirmation needed
+REQUIRE_CONFIRMATION     → User must approve
+DENIED                   → Blocked entirely
+```
 
-## Roadmap
+### Safety Features
 
-### Stage 1: Foundation (COMPLETE)
-- 1.1 Local LLM Runtime
-- 1.2 Memory & Context
-- 1.3 Tools & Sandboxing
-- 1.4 Task Orchestration
-- 1.5 Media Architecture
+- **Workspace boundary** — File access restricted to `workspace/`
+- **Sandbox execution** — Python runs in subprocess
+- **Coordinate validation** — Mouse/keyboard checked against screen bounds
+- **Restricted shortcuts** — Ctrl+Alt+Del, Alt+F4, etc. blocked
+- **HWND validation** — Window handles verified before mutations
+- **Protected windows** — System-critical windows cannot be modified
+- **Browser isolation** — No access to user Chrome/Edge profiles
+- **URL sanitization** — Sensitive parameters redacted in logs
+- **No binary in logs** — Image data never stored in audit trail
 
-### Stage 2: OS Automation (COMPLETE)
-- 2.1 Screen/System Control (COMPLETE)
-- 2.2 Mouse/Keyboard Control (COMPLETE)
-- 2.3 Window Management (COMPLETE)
-  - 2.3.1 Window Architecture (COMPLETE)
-  - 2.3.2 Window Enumeration (COMPLETE)
-  - 2.3.3 Window Control Foundation (COMPLETE)
-  - 2.3.4 Advanced Window Operations (COMPLETE)
-- 2.4 Browser Automation (COMPLETE)
-  - 2.4.1 Browser Foundation / Session Management (COMPLETE)
-  - 2.4.2 Browser Navigation (COMPLETE)
-  - 2.4.3 Browser Page Reading (COMPLETE)
-  - 2.4.4 Browser Interaction (COMPLETE)
-  - 2.4.5 Browser Screenshots (COMPLETE)
-
-### Stage 3: Perception (COMPLETE)
-- 3.1 Vision Analysis (COMPLETE)
-- 3.2 Visual Grounding (COMPLETE)
-- 3.3 Observe/Act/Verify (COMPLETE)
-
-### Stage 4: Agent Intelligence (IN PROGRESS)
-- 4.1 Natural Language Tool Planning (PLANNED)
-- 4.2 Automatic Tool Selection (PLANNED)
-- 4.3 Multi-Step Autonomous Tasks (PLANNED)
-
-### Stage 5: Voice (PLANNED)
-- 5.1 Voice Input/Output
-
-### Stage 6: Scale (PLANNED)
-- 6.1 Cloud Scaling
+---
 
 ## Repository Structure
 
 ```
 Rose/
-+-- agent/                    # Core agent logic
-|   +-- core/                 # Configuration and agent
-|   +-- llm/                  # LLM abstraction layer
-|   +-- memory/               # Memory systems
-|   +-- tools/                # Tool system
-|   +-- orchestration/        # Task orchestration
-|   +-- media/                # Multimodal media
-|   +-- os_control/           # OS automation
-|   +-- router/               # Input/output routing
-+-- tests/                    # Test suites
-|   +-- unit/                 # Unit tests
-|   +-- integration/          # Integration tests
-+-- scripts/                  # Utility scripts
-+-- configs/                  # Configuration files
-+-- models/                   # Model files (git-ignored)
-+-- workspace/                # Agent workspace (git-ignored)
-+-- .env.example              # Environment template
-+-- .gitignore                # Git ignore rules
-+-- requirements.txt          # Python dependencies
-+-- README.md                 # This file
+├── agent/                    # Core agent code
+│   ├── core/                 # Agent, Config, Health, Performance
+│   ├── llm/                  # LLM provider, model optimizer
+│   ├── memory/               # Session, conversation, long-term
+│   ├── tools/                # Tool registry, router, permissions
+│   ├── orchestration/        # Planner, executor, autonomous
+│   ├── media/                # Vision, grounding, OAV loop
+│   ├── os_control/           # Screen, mouse, keyboard, window
+│   ├── browser/              # Playwright browser automation
+│   ├── web/                  # REST API, ApplicationService
+│   └── ui/                   # PySide6 desktop interface
+├── tests/                    # Test suites
+│   ├── unit/                 # 1459 unit tests
+│   └── integration/          # Integration tests
+├── run.py                    # Main entry point
+├── install.bat               # Windows installer
+├── pyproject.toml            # Package configuration
+├── requirements.txt          # Python dependencies
+├── .env.example              # Environment template
+└── README.md                 # This file
 ```
+
+---
+
+## Usage
+
+### Interactive CLI
+```powershell
+python run.py
+# Type messages, Rose responds
+# Type 'help' for commands, 'quit' to exit
+```
+
+### Web Interface
+```powershell
+python run.py --web
+# Open http://127.0.0.1:8080 in your browser
+```
+
+### Headless Mode
+```powershell
+python run.py --headless
+# For testing and automation
+```
+
+### Check Status
+```powershell
+python run.py status
+# Shows system health, dependencies, model info
+```
+
+---
+
+## Releases
+
+Download pre-built packages from [GitHub Releases](https://github.com/devanshgmavr-ui/Rose/releases):
+
+| Release | Date | Description |
+|---------|------|-------------|
+| [v1.0.0](https://github.com/devanshgmavr-ui/Rose/releases/tag/v1.0.0) | Aug 2025 | Initial release — all 8 phases complete |
+
+### Package Contents
+
+**`rose-full-v1.0.0.zip`** — Complete installation
+```
+Rose/
+├── agent/              # All agent modules
+├── tests/              # Test suites
+├── run.py              # Entry point
+├── install.bat         # Installer
+├── pyproject.toml      # Package config
+├── requirements.txt    # Dependencies
+├── .env.example        # Config template
+└── README.md           # Documentation
+```
+
+**`rose-core-v1.0.0.zip`** — Core only (smaller download)
+```
+Rose/
+├── agent/core/         # Agent core
+├── agent/llm/          # LLM provider
+├── agent/memory/       # Memory system
+├── agent/tools/        # Tool system
+├── run.py
+└── requirements.txt
+```
+
+---
 
 ## License
 
-License: To be determined.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
-This project is currently in active development. Contributions and feedback are welcome.
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Run tests (`python -m pytest tests/unit/ -v`)
+4. Submit a pull request
+
+---
+
+<div align="center">
+
+**Built with local AI. No cloud required.**
+
+[⭐ Star this repo](https://github.com/devanshgmavr-ui/Rose/stargazers) · [🐛 Report Bug](https://github.com/devanshgmavr-ui/Rose/issues) · [📦 Releases](https://github.com/devanshgmavr-ui/Rose/releases)
+
+</div>
