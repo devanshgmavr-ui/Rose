@@ -1,10 +1,8 @@
-"""Tests for Stage 8.1 - Web Interface."""
+"""Tests for Stage 8.1 - Web Interface (updated for Phase 5 server)."""
 
 import pytest
 import time
-from agent.web.server import (
-    WebServer, WebConfig, ChatMessage, ChatRequest, ChatResponse,
-)
+from agent.web.server import WebServer, WebConfig
 
 
 class TestWebConfig:
@@ -19,133 +17,138 @@ class TestWebConfig:
         assert d["port"] == 9090
         assert d["debug"] is True
 
-
-class TestChatMessage:
-    def test_creation(self):
-        m = ChatMessage(role="user", content="hello")
-        assert m.role == "user"
-        assert m.content == "hello"
-
-    def test_to_dict(self):
-        m = ChatMessage(role="assistant", content="hi", timestamp=1.0)
-        d = m.to_dict()
-        assert d["role"] == "assistant"
-        assert d["timestamp"] == 1.0
-
-    def test_from_dict(self):
-        d = {"role": "user", "content": "test", "timestamp": 2.0}
-        m = ChatMessage.from_dict(d)
-        assert m.content == "test"
-
-
-class TestChatRequest:
-    def test_creation(self):
-        r = ChatRequest(message="hello")
-        assert r.message == "hello"
-
-    def test_to_dict(self):
-        r = ChatRequest(message="hi", session_id="s1")
-        d = r.to_dict()
-        assert d["session_id"] == "s1"
-
-
-class TestChatResponse:
-    def test_creation(self):
-        r = ChatResponse(response="hello")
-        assert r.response == "hello"
-
-    def test_to_dict(self):
-        r = ChatResponse(response="hi", tool_calls=3, execution_time=1.5)
-        d = r.to_dict()
-        assert d["tool_calls"] == 3
-        assert d["execution_time"] == 1.5
+    def test_custom_values(self):
+        c = WebConfig(host="0.0.0.0", port=3000, enable_auth=True)
+        assert c.host == "0.0.0.0"
+        assert c.port == 3000
+        assert c.enable_auth is True
 
 
 class TestWebServer:
     def test_init(self):
-        ws = WebServer()
-        assert ws._config.port == 8080
+        s = WebServer()
+        assert s._running is False
+        assert s._app is None
 
-    def test_init_custom_config(self):
-        ws = WebServer(WebConfig(port=9090))
-        assert ws._config.port == 9090
+    def test_init_with_config(self):
+        cfg = WebConfig(port=9090)
+        s = WebServer(config=cfg)
+        assert s.get_config().port == 9090
+
+    def test_init_with_app_service(self):
+        from unittest.mock import MagicMock
+        app = MagicMock()
+        s = WebServer(app_service=app)
+        assert s._app is app
+
+    def test_set_app_service(self):
+        from unittest.mock import MagicMock
+        s = WebServer()
+        app = MagicMock()
+        s.set_app_service(app)
+        assert s._app is app
 
     def test_handle_index(self):
-        ws = WebServer()
-        result = ws.handle_request("GET", "/")
+        s = WebServer()
+        result = s.handle_request("GET", "/")
         assert result["status"] == 200
-        assert "Rose Agent API" in result["data"]["name"]
+        assert result["data"]["name"] == "Rose Agent API"
 
     def test_handle_health(self):
-        ws = WebServer()
-        result = ws.handle_request("GET", "/health")
+        s = WebServer()
+        result = s.handle_request("GET", "/health")
         assert result["status"] == 200
-        assert result["data"]["status"] == "healthy"
+        assert "status" in result["data"]
 
-    def test_handle_chat(self):
-        ws = WebServer()
-        result = ws.handle_request("POST", "/chat", {"message": "hello"})
+    def test_handle_health_v1(self):
+        s = WebServer()
+        result = s.handle_request("GET", "/api/v1/health")
         assert result["status"] == 200
-        assert "Received: hello" in result["data"]["response"]
 
-    def test_handle_chat_empty(self):
-        ws = WebServer()
-        result = ws.handle_request("POST", "/chat", {"message": ""})
-        assert result["status"] == 400
+    def test_handle_info(self):
+        s = WebServer()
+        result = s.handle_request("GET", "/api/v1/info")
+        assert result["status"] == 200
+        assert result["data"]["name"] == "Rose"
 
     def test_handle_chat_no_message(self):
-        ws = WebServer()
-        result = ws.handle_request("POST", "/chat", {})
+        s = WebServer()
+        result = s.handle_request("POST", "/api/v1/chat", body={})
         assert result["status"] == 400
 
-    def test_handle_chat_with_session(self):
-        ws = WebServer()
-        result = ws.handle_request(
-            "POST", "/chat",
-            {"message": "hi", "session_id": "s1"},
-        )
+    def test_handle_chat_no_app(self):
+        s = WebServer()
+        result = s.handle_request("POST", "/api/v1/chat", body={"message": "hi"})
+        assert result["status"] == 503
+
+    def test_handle_chat_with_app(self):
+        from unittest.mock import MagicMock
+        app = MagicMock()
+        app.send_message.return_value = {"success": True, "response": "hello"}
+        s = WebServer(app_service=app)
+        result = s.handle_request("POST", "/api/v1/chat", body={"message": "hi"})
         assert result["status"] == 200
-        assert result["data"]["session_id"] == "s1"
+        assert result["data"]["response"] == "hello"
 
     def test_handle_list_sessions(self):
-        ws = WebServer()
-        ws.handle_request("POST", "/chat", {"message": "hi", "session_id": "s1"})
-        result = ws.handle_request("GET", "/sessions")
+        s = WebServer()
+        result = s.handle_request("GET", "/api/v1/sessions")
         assert result["status"] == 200
-        assert "s1" in result["data"]["sessions"]
+        assert isinstance(result["data"], list)
+
+    def test_handle_create_session(self):
+        from unittest.mock import MagicMock
+        app = MagicMock()
+        session = MagicMock()
+        session.to_dict.return_value = {"session_id": "abc", "title": "Test"}
+        app.create_session.return_value = session
+        s = WebServer(app_service=app)
+        result = s.handle_request("POST", "/api/v1/sessions", body={"title": "Test"})
+        assert result["status"] == 200
+
+    def test_handle_list_tools(self):
+        s = WebServer()
+        result = s.handle_request("GET", "/api/v1/tools")
+        assert result["status"] == 200
+
+    def test_handle_execute_tool_no_name(self):
+        s = WebServer()
+        result = s.handle_request("POST", "/api/v1/tools/execute", body={})
+        assert result["status"] == 400
+
+    def test_handle_execute_tool_no_app(self):
+        s = WebServer()
+        result = s.handle_request("POST", "/api/v1/tools/execute", body={"tool_name": "shell"})
+        assert result["status"] == 503
+
+    def test_handle_list_tasks(self):
+        s = WebServer()
+        result = s.handle_request("GET", "/api/v1/tasks")
+        assert result["status"] == 200
+
+    def test_handle_create_task_no_objective(self):
+        s = WebServer()
+        result = s.handle_request("POST", "/api/v1/tasks", body={})
+        assert result["status"] == 400
+
+    def test_handle_pending_confirmations(self):
+        s = WebServer()
+        result = s.handle_request("GET", "/api/v1/confirmations")
+        assert result["status"] == 200
+
+    def test_handle_get_events(self):
+        s = WebServer()
+        result = s.handle_request("GET", "/api/v1/events")
+        assert result["status"] == 200
 
     def test_not_found(self):
-        ws = WebServer()
-        result = ws.handle_request("GET", "/nonexistent")
+        s = WebServer()
+        result = s.handle_request("GET", "/nonexistent")
         assert result["status"] == 404
 
-    def test_register_custom_route(self):
-        ws = WebServer()
-        ws.register_route("/custom", lambda b, h: {"status": 200, "data": "custom"})
-        result = ws.handle_request("GET", "/custom")
-        assert result["status"] == 200
-
-    def test_middleware(self):
-        ws = WebServer()
-        ws.add_middleware(lambda m, p, b: {"status": 200, "data": "intercepted"})
-        result = ws.handle_request("GET", "/")
-        assert result["data"] == "intercepted"
-
-    def test_chat_history(self):
-        ws = WebServer()
-        ws.handle_request("POST", "/chat", {"message": "hi", "session_id": "s1"})
-        ws.handle_request("POST", "/chat", {"message": "bye", "session_id": "s1"})
-        history = ws.get_chat_history("s1")
-        assert len(history) == 4
-        assert history[0].content == "hi"
-        assert history[1].content == "Received: hi"
-
-    def test_pattern_matching(self):
-        ws = WebServer()
-        assert ws._matches_pattern("/sessions/{id}", "/sessions/123") is True
-        assert ws._matches_pattern("/sessions/{id}", "/sessions") is False
-        assert ws._matches_pattern("/health", "/health") is True
-
-    def test_get_config(self):
-        ws = WebServer(WebConfig(port=7777))
-        assert ws.get_config().port == 7777
+    def test_start_stop(self):
+        s = WebServer()
+        s.start()
+        assert s.is_running() is True
+        s.stop()
+        assert s.is_running() is False

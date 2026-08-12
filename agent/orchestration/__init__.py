@@ -22,6 +22,7 @@ from .validator import PlanValidator
 from .executor import TaskExecutor
 from .verifier import Verifier
 from .persistence import TaskPersistence
+from .autonomous import AutonomousTaskManager, TaskProgress, TaskResult
 
 __all__ = [
     "TaskStatus",
@@ -47,4 +48,7 @@ __all__ = [
     "TaskExecutor",
     "Verifier",
     "TaskPersistence",
+    "AutonomousTaskManager",
+    "TaskProgress",
+    "TaskResult",
 ]
