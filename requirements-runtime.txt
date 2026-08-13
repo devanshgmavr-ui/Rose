@@ -49,3 +49,7 @@ pathspec>=0.11.0
 
 # OCR (optional - requires Tesseract-OCR installed on system)
 pytesseract>=0.3.10
+
+# Model downloader (used by scripts/download_models.py)
+huggingface_hub>=0.20.0
+requests>=2.31.0

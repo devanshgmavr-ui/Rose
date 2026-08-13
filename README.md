@@ -37,11 +37,24 @@ cd Rose
 install.bat
 ```
 
-The installer automatically detects your system and selects the appropriate configuration:
-- NVIDIA GPU with CUDA → GPU-accelerated mode
-- No GPU → CPU-only mode
-- Python 3.10-3.12 → Prebuilt wheels (no compiler needed)
-- Python 3.13+ → May require Visual Studio Build Tools
+The installer automatically:
+1. Detects Python version and architecture
+2. Detects NVIDIA GPU and CUDA version
+3. Selects appropriate prebuilt wheels (no compiler needed)
+4. Creates virtual environment
+5. Downloads Qwen2.5-VL model files (~6 GB)
+6. Configures Rose for your system
+7. Verifies installation with health check
+
+### Installer Options
+
+```batch
+install.bat                    # Full installation
+install.bat --skip-models      # Skip model download (if already present)
+install.bat --cpu-only         # Force CPU-only mode
+install.bat --check-only       # Verify installation status
+install.bat --quiet            # Minimal output
+```
 
 ### Manual Install
 
@@ -51,8 +64,8 @@ git clone https://github.com/devanshgmavr-ui/Rose.git
 cd Rose
 
 # Create virtual environment
-python -m venv venv
-.\venv\Scripts\Activate
+python -m venv .venv
+.\.venv\Scripts\Activate
 
 # Install with prebuilt wheels (recommended)
 pip install -r requirements-runtime.txt --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
@@ -60,9 +73,8 @@ pip install -r requirements-runtime.txt --extra-index-url https://abetlen.github
 # Or for CUDA 12.x:
 # pip install -r requirements-runtime.txt --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu121
 
-# Place your models
-# models/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
-# models/Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf
+# Download models
+python scripts/download_models.py
 
 # Run
 python run.py
@@ -444,26 +456,65 @@ Rose uses prebuilt wheels to avoid requiring compilation tools:
 | **CPU** | `whl/cpu` | Python 3.10-3.12 |
 | **CUDA 11.8** | `whl/cu118` | NVIDIA GPU, CUDA 11.8 |
 | **CUDA 12.1** | `whl/cu121` | NVIDIA GPU, CUDA 12.1+ |
+| **CUDA 12.2** | `whl/cu122` | NVIDIA GPU, CUDA 12.2+ |
+| **CUDA 12.3** | `whl/cu123` | NVIDIA GPU, CUDA 12.3+ |
 | **CUDA 12.4** | `whl/cu124` | NVIDIA GPU, CUDA 12.4+ |
 | **CUDA 12.5** | `whl/cu125` | NVIDIA GPU, CUDA 12.5+ |
 | **CUDA 13.0** | `whl/cu130` | NVIDIA GPU, CUDA 13.0+ |
+| **CUDA 13.2** | `whl/cu132` | NVIDIA GPU, CUDA 13.2+ |
+
+### Supported Python Versions
+
+| Python | Prebuilt Wheels | Notes |
+|--------|-----------------|-------|
+| 3.10 | Yes | Recommended |
+| 3.11 | Yes | Recommended |
+| 3.12 | Yes | Recommended |
+| 3.13 | Limited | May require compilation |
+| 3.14+ | No | Not supported |
 
 ### Troubleshooting Installation
 
-**Problem: `CMAKE_C_COMPILER not set`**
+**Problem: `CMAKE_C_COMPILER not set` or `nmake not found`**
 
-This means the installer tried to compile llama-cpp-python from source.
-Solution: Use Python 3.10-3.12 with prebuilt wheels, or install Visual Studio Build Tools.
+This happens when the installer tries to compile llama-cpp-python from source because no prebuilt wheel is available.
+
+Solutions:
+1. Use Python 3.10, 3.11, or 3.12 (recommended)
+2. Use `--cpu-only` flag if you don't need GPU acceleration
+3. Install Visual Studio Build Tools for source compilation
+4. Check that your CUDA version is supported (11.8, 12.1-12.5, 13.0, 13.2)
 
 **Problem: `Could not find a version that satisfies requirement`**
 
-This means no prebuilt wheel exists for your Python version.
-Solution: Use Python 3.10, 3.11, or 3.12.
+This means no prebuilt wheel exists for your Python + CUDA combination.
+
+Solutions:
+1. Use Python 3.10, 3.11, or 3.12
+2. Check your CUDA version with `nvidia-smi`
+3. Use `--cpu-only` flag
 
 **Problem: `No module named 'playwright'`**
 
-Browser automation is optional.
+Browser automation is optional and not installed by default.
+
 Solution: `pip install playwright && python -m playwright install chromium`
+
+**Problem: Model download fails**
+
+Solutions:
+1. Check internet connection
+2. Try `python scripts/download_models.py` directly
+3. Manually download from HuggingFace and place in `models/` directory
+
+**Problem: `CUDA error: out of memory`**
+
+Your GPU doesn't have enough VRAM for the model.
+
+Solutions:
+1. Close other GPU-intensive applications
+2. Reduce `LLM_GPU_LAYERS` in `.env`
+3. Use a smaller quantization (Q3_K_S or IQ3_M)
 
 ---
 
