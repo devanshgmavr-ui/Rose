@@ -18,6 +18,7 @@ MAX_KEYBOARD_ACTIONS_PER_REQUEST = 20
 MAX_TYPED_TEXT_LENGTH = 1000
 MAX_HOTKEY_KEYS = 4
 KEYBOARD_ACTION_TIMEOUT = 5.0
+TYPING_DELAY_MS = 67
 
 VIRTUAL_KEY_MAP = {
     "ENTER": 0x0D,
@@ -319,9 +320,10 @@ class KeyboardTool(Tool):
 
     def _execute_type(self, arguments: Dict[str, Any], start: float) -> ToolResult:
         text = arguments.get("text", "")
+        delay_seconds = TYPING_DELAY_MS / 1000.0
         for char in text:
             self._send_unicode_char(char)
-            time.sleep(0.005)
+            time.sleep(delay_seconds)
 
         active_window = self._get_active_window_title()
         display_text = text[:50] + "..." if len(text) > 50 else text

@@ -6,7 +6,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-1459%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-1528%20passing-brightgreen.svg)](#testing)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078d4.svg)](https://www.microsoft.com/windows)
 [![GPU](https://img.shields.io/badge/GPU-CUDA-76b900.svg)](https://developer.nvidia.com/cuda-zone)
 
@@ -177,6 +177,7 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 | **Phase 6** | User Interface (PySide6 Desktop App) | ✅ Complete |
 | **Phase 7** | End-to-End (run.py, First-Run, Startup) | ✅ Complete |
 | **Phase 8** | Packaging (pyproject.toml, Installer, Releases) | ✅ Complete |
+| **Phase 9** | Autonomous Tool Selection & Prompt Execution | ✅ Complete |
 
 ### Detailed Breakdown
 
@@ -224,6 +225,18 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 - 7.1 run.py — CLI, web, and headless modes
 - 7.2 First-run detection and setup
 - 8.1 pyproject.toml, install.bat, release packages
+</details>
+
+<details>
+<summary><strong>Phase 9: Autonomous Tool Selection & Prompt Execution</strong></summary>
+
+- 9.1 CapabilityAnalyzer — Natural language → capability detection (15 capability types)
+- 9.2 ToolScorer — Weighted scoring (capability, permissions, reliability, context, risk)
+- 9.3 AutonomousTaskState — 11-state execution pipeline with step tracking
+- 9.4 AutonomousLoop — observe→plan→execute→verify→replan cycle
+- 9.5 Constraint Parsing — Prohibited tools, allowed files, minimize confirmations
+- 9.6 ExecutionTrace — Concise UI-visible operational trace
+- 9.7 67ms Controlled Typing — Enforced at keyboard execution layer
 </details>
 
 ---
@@ -317,11 +330,14 @@ See `.env.example` for all options.
 
 ## Testing
 
-**1459 unit tests** — all passing
+**1528 unit tests** — all passing
 
 ```powershell
 # Run all tests
 python -m pytest tests/unit/ -v
+
+# Run Phase 9 tests specifically
+python -m pytest tests/unit/test_autonomous_selection.py -v
 
 # Run specific module
 python -m pytest tests/unit/test_vision.py -v

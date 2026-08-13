@@ -820,3 +820,33 @@ class TestPhase9Integration:
         ]
         for cap in expected_caps:
             assert cap in CAPABILITY_TOOLS_MAP, f"Missing capability: {cap}"
+
+
+# ──────────────────────────────────────────────
+# 67ms Typing Tests
+# ──────────────────────────────────────────────
+
+class TestTypingDelay:
+    def test_typing_delay_constant(self):
+        from agent.os_control.keyboard import TYPING_DELAY_MS
+        assert TYPING_DELAY_MS == 67
+
+    def test_typing_delay_enforced(self):
+        from agent.os_control.keyboard import KeyboardTool, TYPING_DELAY_MS
+        tool = KeyboardTool(enabled=True)
+        with patch.object(tool, '_send_unicode_char'):
+            with patch('time.sleep') as mock_sleep:
+                tool._execute_type({"text": "ab"}, time.time())
+                assert mock_sleep.call_count == 2
+                for call in mock_sleep.call_args_list:
+                    assert call[0][0] == TYPING_DELAY_MS / 1000.0
+
+    def test_typing_delay_real_timing(self):
+        from agent.os_control.keyboard import KeyboardTool, TYPING_DELAY_MS
+        tool = KeyboardTool(enabled=True)
+        with patch.object(tool, '_send_unicode_char'):
+            start = time.time()
+            tool._execute_type({"text": "abc"}, start)
+            elapsed = time.time() - start
+            expected_min = (TYPING_DELAY_MS / 1000.0) * 3 * 0.9
+            assert elapsed >= expected_min
