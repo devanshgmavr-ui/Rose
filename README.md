@@ -20,7 +20,7 @@
 
 ## What is Rose?
 
-Rose is an autonomous AI agent that runs entirely on your Windows PC. It uses a local LLM (Qwen2.5-Coder-7B) with NVIDIA GPU acceleration to understand natural language, plan tasks, and execute them through a comprehensive tool system — all without sending a single byte to the cloud.
+Rose is an autonomous AI agent that runs entirely on your Windows PC. It uses a local Vision-Language model (Qwen2.5-VL-7B-Instruct) with NVIDIA GPU acceleration to understand natural language, analyze screenshots, and execute tasks through a comprehensive tool system — all without sending a single byte to the cloud.
 
 ```
 You: "Take a screenshot of my desktop and tell me what applications are running"
@@ -43,19 +43,6 @@ The installer automatically detects your system and selects the appropriate conf
 - Python 3.10-3.12 → Prebuilt wheels (no compiler needed)
 - Python 3.13+ → May require Visual Studio Build Tools
 
-### Python Installer (Advanced)
-
-```powershell
-git clone https://github.com/devanshgmavr-ui/Rose.git
-cd Rose
-python install_rose.py --install-type full
-```
-
-Options:
-- `--cpu-only`: Force CPU mode even if GPU detected
-- `--check-only`: Only show system info, don't install
-- `--install-type core|ui|full|dev`: Select feature set
-
 ### Manual Install
 
 ```powershell
@@ -73,8 +60,9 @@ pip install -r requirements-runtime.txt --extra-index-url https://abetlen.github
 # Or for CUDA 12.x:
 # pip install -r requirements-runtime.txt --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu121
 
-# Place your model
-# models/qwen2.5-coder-7b-instruct-q4_k_m.gguf
+# Place your models
+# models/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
+# models/Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf
 
 # Run
 python run.py
@@ -95,7 +83,8 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 ## Features
 
 ### 🧠 Intelligence
-- **Local LLM Inference** — Qwen2.5-Coder-7B with CUDA GPU acceleration
+- **Local LLM Inference** — Qwen2.5-VL-7B-Instruct with CUDA GPU acceleration
+- **Vision-Language Model** — Understands images and text together natively
 - **Natural Language Planning** — Understands goals and breaks them into steps
 - **Automatic Tool Selection** — Picks the right tool for each task
 - **Multi-Step Execution** — Plans, executes, verifies, and adapts
@@ -163,7 +152,7 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 │                  Rose Agent Core                         │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
 │  │   LLM    │ │  Memory  │ │ Planner  │ │ Verifier │   │
-│  │ Qwen 7B  │ │ Short +  │ │ NL →     │ │ Result   │   │
+│  │ Qwen VL  │ │ Short +  │ │ NL →     │ │ Result   │   │
 │  │ CUDA GPU │ │ Long Term│ │ Plan     │ │ Check    │   │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │
 └─────────────────────┬───────────────────────────────────┘
@@ -192,7 +181,7 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 | **UI** | `agent/ui/` | PySide6 desktop app with chat, tasks, settings |
 | **Web** | `agent/web/` | REST API, SSE streaming, ApplicationService |
 | **Core** | `agent/core/` | Agent, Config, Health, Performance, Resources |
-| **LLM** | `agent/llm/` | Local provider with CUDA, model optimizer |
+| **LLM** | `agent/llm/` | Local provider with CUDA, VL support via Llava16ChatHandler |
 | **Memory** | `agent/memory/` | Session, conversation, long-term SQLite |
 | **Tools** | `agent/tools/` | 15+ tools with permissions and audit |
 | **Orchestration** | `agent/orchestration/` | Planner, executor, verifier, autonomous |
@@ -336,27 +325,31 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 
 ## Model
 
-**Qwen2.5-Coder-7B-Instruct** (Q4_K_M quantization)
+**Qwen2.5-VL-7B-Instruct** (Vision-Language Model)
 
 | Property | Value |
 |----------|-------|
 | Parameters | 7 Billion |
-| Quantization | Q4_K_M |
-| File Size | ~4.36 GB |
+| Quantization | Q4_K_M (main) + F16 (vision projector) |
+| File Size | ~4.4 GB + ~1.3 GB mmproj |
 | Context Length | 4096 tokens |
 | GPU Layers | 28 (full offload) |
+| Vision | Native image understanding via Llava16ChatHandler |
 | License | Apache 2.0 |
 
 ### Setup
 
-1. Download from [Hugging Face](https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF)
-2. Place in `models/` directory
-3. The model auto-discovered on startup
+1. Download from [Hugging Face](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct-GGUF)
+2. Place both files in `models/` directory:
+   - `Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf` (main model)
+   - `Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf` (vision projector)
+3. Models auto-discovered on startup
 
 ```
 Rose/
   models/
-    qwen2.5-coder-7b-instruct-q4_k_m.gguf
+    Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
+    Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf
 ```
 
 > **Future Goal:** Develop a custom trained model specifically for autonomous agent tasks.
@@ -369,7 +362,8 @@ Rose/
 
 ```env
 # LLM Settings
-MODEL_PATH=./models/qwen2.5-coder-7b-instruct-q4_k_m.gguf
+MODEL_PATH=./models/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
+MMPROJ_PATH=./models/Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf
 LLM_GPU_LAYERS=28
 LLM_CONTEXT_LENGTH=4096
 

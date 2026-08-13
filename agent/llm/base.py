@@ -44,6 +44,9 @@ class LLMConfig:
     n_gpu_layers: int = 0
     n_batch: int = 512
     verbose: bool = False
+    # Vision-Language model support
+    mmproj_path: Optional[str] = None  # Path to mmproj F16 file for VL models
+    logits_all: bool = False  # Required for some VL models
 
 
 class LLMProvider(ABC):

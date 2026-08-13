@@ -163,6 +163,13 @@ class Agent:
         provider_type = self.config.llm_provider.lower()
         
         if provider_type == "local":
+            # Resolve mmproj path
+            mmproj_path = None
+            if self.config.mmproj_path:
+                mmproj_full = self.config.base_dir / self.config.mmproj_path
+                if mmproj_full.exists():
+                    mmproj_path = str(mmproj_full)
+            
             llm_config = LLMConfig(
                 provider_type=LLMProviderType.LOCAL,
                 model_path=str(self.config.get_model_full_path()),
@@ -175,6 +182,7 @@ class Agent:
                 n_gpu_layers=self.config.llm_gpu_layers,
                 n_batch=self.config.llm_batch_size,
                 verbose=self.config.llm_verbose,
+                mmproj_path=mmproj_path,
             )
             return LocalLLMProvider(llm_config)
         

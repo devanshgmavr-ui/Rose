@@ -43,16 +43,25 @@ def main():
 
     print("Loading model...")
     start = time.time()
+    from llama_cpp import Llava16ChatHandler
+    chat_handler = Llava16ChatHandler(
+        clip_model_path=str(config.mmproj_path) if config.mmproj_path and Path(config.mmproj_path).exists() else None,
+        verbose=False
+    )
     llama = Llama(
         model_path=model_path,
+        chat_handler=chat_handler,
         n_ctx=config.model_context_length,
         n_gpu_layers=config.llm_gpu_layers,
         n_batch=config.llm_batch_size,
+        logits_all=True,
         verbose=False,
         embedding=True,
     )
     load_time = time.time() - start
     print(f"Model loaded in {load_time:.2f}s")
+    is_vl = config.mmproj_path and Path(config.mmproj_path).exists()
+    print(f"Vision-Language: {'Yes' if is_vl else 'No (text-only mode)'}")
     print()
 
     # Test 1: Basic generation
@@ -125,6 +134,39 @@ def main():
     assert "alice" in text.lower(), "Model did not remember the name"
     print("PASS")
     print()
+
+    # Test 5: Vision-Language (if mmproj available)
+    if is_vl:
+        print("--- Test 5: Vision-Language (VL) Test ---")
+        import base64
+        # Create a simple test image (white square)
+        from PIL import Image
+        import io
+        img = Image.new('RGB', (64, 64), color='red')
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        img_b64 = base64.b64encode(buf.getvalue()).decode()
+        
+        messages = [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Describe this image in one sentence."},
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_b64}"}}
+            ]
+        }]
+        start = time.time()
+        response = llama.create_chat_completion(messages=messages, max_tokens=100, temperature=0.7)
+        elapsed = time.time() - start
+        text = response["choices"][0]["message"]["content"]
+        tokens = response.get("usage", {}).get("total_tokens", 0)
+        print(f"Response: {text.strip()}")
+        print(f"Tokens: {tokens} | Time: {elapsed:.2f}s | Speed: {tokens/elapsed:.1f} tok/s")
+        assert len(text.strip()) > 0, "Empty response"
+        print("PASS")
+        print()
+    else:
+        print("--- Test 5: Skipped (no mmproj file) ---")
+        print()
 
     del llama
     print("=" * 50)

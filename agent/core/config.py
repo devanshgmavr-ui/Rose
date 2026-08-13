@@ -35,9 +35,10 @@ class Config:
     config_dir: Path = field(default_factory=lambda: Path("./configs"))
     
     # Model settings
-    model_path: str = "./models/qwen2.5-coder-7b-instruct-q4_k_m.gguf"
-    model_name: str = "qwen2.5-coder-7b-instruct"
+    model_path: str = "./models/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf"
+    model_name: str = "qwen2.5-vl-7b-instruct"
     model_context_length: int = 4096
+    mmproj_path: str = "./models/Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf"
     
     # LLM settings
     llm_provider: str = "local"
@@ -123,9 +124,10 @@ class Config:
         self.output_dir = Path("./outputs")
         self.log_dir = Path("./logs")
         self.config_dir = Path("./configs")
-        self.model_path = "./models/qwen2.5-coder-7b-instruct-q4_k_m.gguf"
-        self.model_name = "qwen2.5-coder-7b-instruct"
+        self.model_path = "./models/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf"
+        self.model_name = "qwen2.5-vl-7b-instruct"
         self.model_context_length = 4096
+        self.mmproj_path = "./models/Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf"
         self.llm_provider = "local"
         self.llm_temperature = 0.7
         self.llm_top_p = 0.9
@@ -316,6 +318,7 @@ class Config:
         self.model_path = os.getenv("MODEL_PATH", self.model_path)
         self.model_name = os.getenv("MODEL_NAME", self.model_name)
         self.model_context_length = int(os.getenv("MODEL_CONTEXT_LENGTH", str(self.model_context_length)))
+        self.mmproj_path = os.getenv("MMPROJ_PATH", self.mmproj_path)
         
         self.llm_temperature = float(os.getenv("LLM_TEMPERATURE", str(self.llm_temperature)))
         self.llm_max_tokens = int(os.getenv("LLM_MAX_TOKENS", str(self.llm_max_tokens)))

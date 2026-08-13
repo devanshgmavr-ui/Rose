@@ -142,13 +142,23 @@ def check_model():
     from dotenv import load_dotenv
     load_dotenv(PROJECT_ROOT / ".env")
     
-    model_path = os.getenv("MODEL_PATH", "./models/qwen2.5-coder-7b-instruct-q4_k_m.gguf")
+    model_path = os.getenv("MODEL_PATH", "./models/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf")
     full_path = PROJECT_ROOT / model_path
     
     if full_path.exists():
         size_gb = full_path.stat().st_size / (1024**3)
-        return f"Found ({size_gb:.2f} GB)"
-    return f"Not found: {full_path}"
+        result = f"Found ({size_gb:.2f} GB)"
+    else:
+        return f"Not found: {full_path}"
+    
+    # Check mmproj (vision projector) for VL models
+    mmproj_path = os.getenv("MMPROJ_PATH", "./models/Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf")
+    mmproj_full = PROJECT_ROOT / mmproj_path
+    if mmproj_full.exists():
+        size_gb = mmproj_full.stat().st_size / (1024**3)
+        result += f" + mmproj ({size_gb:.2f} GB)"
+    
+    return result
 
 
 def check_cuda_support():
