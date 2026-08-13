@@ -81,6 +81,17 @@ from .vision_pipeline import (
     VisionPipelineResult,
     VisionMode,
 )
+from .vision_decision import (
+    VisionDecisionSystem,
+    VisionDecision,
+    VisionSource,
+    VisionRequirement,
+)
+from .multimodal_pipeline import (
+    MultimodalRequestPipeline,
+    MultimodalRequest,
+    RequestType,
+)
 
 __all__ = [
     "MediaType",
@@ -150,6 +161,13 @@ __all__ = [
     "VisionPipeline",
     "VisionPipelineResult",
     "VisionMode",
+    "VisionDecisionSystem",
+    "VisionDecision",
+    "VisionSource",
+    "VisionRequirement",
+    "MultimodalRequestPipeline",
+    "MultimodalRequest",
+    "RequestType",
     "MEDIA_TYPE_EXTENSIONS",
     "MEDIA_MIME_TYPES",
 ]

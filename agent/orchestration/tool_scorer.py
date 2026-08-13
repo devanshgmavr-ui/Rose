@@ -296,13 +296,20 @@ class ToolScorer:
         if not self._permission_manager:
             return 0.7
 
+        from ..tools.base import ConfirmationLevel
         allowed_count = 0
         for perm in meta.permissions:
-            status = self._permission_manager.check_permission(perm)
-            if status.value == "allow":
+            perm_value = perm.value if hasattr(perm, 'value') else perm
+            has_perm = self._permission_manager.has_permission(perm_value, "workspace")
+            if not has_perm:
+                continue
+            conf_level = self._permission_manager.get_confirmation_level(perm_value)
+            if conf_level == ConfirmationLevel.ALLOW:
                 allowed_count += 1
-            elif status.value == "require_confirmation":
+            elif conf_level == ConfirmationLevel.REQUIRE_CONFIRMATION:
                 allowed_count += 0.5
+            else:
+                allowed_count += 0.0
 
         return allowed_count / len(meta.permissions) if meta.permissions else 1.0
 

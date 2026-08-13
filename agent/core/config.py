@@ -103,145 +103,69 @@ class Config:
     keyboard_action_timeout: float = 5.0
     max_scroll_amount: int = 10
     
+    # Browser automation settings
+    browser_automation_enabled: bool = False
+    browser_headless: bool = True
+    browser_max_sessions: int = 2
+    browser_max_tabs: int = 5
+    browser_navigation_timeout: int = 30000
+    browser_action_timeout: int = 10000
+    browser_max_page_text_chars: int = 20000
+    browser_max_page_text_tokens: int = 5000
+    browser_max_elements_returned: int = 100
+    browser_max_input_text_length: int = 2000
+    browser_interaction_timeout: int = 10000
+    browser_max_interactions_per_request: int = 20
+    browser_max_wait_timeout: int = 15000
+    
+    # Browser screenshot settings
+    browser_screenshot_enabled: bool = False
+    browser_max_screenshot_width: int = 3840
+    browser_max_screenshot_height: int = 2160
+    browser_max_full_page_height: int = 10000
+    browser_max_screenshot_size_mb: int = 20
+    browser_max_screenshots_per_request: int = 10
+    browser_screenshot_timeout: int = 10000
+    
+    # Vision settings (additional)
+    vision_provider_type: str = "local"
+    vision_model_path: str = ""
+    vision_max_elements: int = 100
+    vision_analysis_timeout: int = 30000
+    
+    # Grounding settings
+    grounding_confidence_threshold: float = 0.3
+    grounding_stale_timeout: float = 30.0
+    
+    # OCR settings
+    ocr_enabled: bool = True
+    ocr_provider_type: str = "local_tesseract"
+    ocr_language: str = "eng"
+    ocr_config: str = "--psm 6"
+    ocr_max_image_size_mb: int = 20
+    ocr_max_image_width: int = 4096
+    ocr_max_image_height: int = 4096
+    ocr_max_text_chars: int = 100000
+    ocr_max_blocks: int = 1000
+    ocr_timeout_ms: int = 30000
+    
+    # Multimodal settings
+    multimodal_enabled: bool = False
+    multimodal_max_ocr_chars: int = 2000
+    multimodal_max_targets: int = 15
+    multimodal_include_coordinates: bool = True
+    multimodal_include_image_path: bool = True
+    autonomous_vision_enabled: bool = False
+    autonomous_max_retries: int = 3
+    autonomous_screenshot_delay: float = 1.0
+    
     def __post_init__(self):
         """Post-initialization hook for dataclass."""
-        # Load environment variables
-        load_dotenv()
-        
-        # Set base directory from config_dir if provided
-        # (config_dir is already set by dataclass init)
-        
-        # Load configuration from files
-        self._load_yaml_config()
-        self._load_env_config()
-        
-        # Ensure directories exist
-        self._ensure_directories()
-    
-    def __init__(self, config_dir: Optional[Path] = None):
-        """Initialize configuration.
-        
-        Args:
-            config_dir: Optional custom config directory path.
-        """
-        # Set defaults for all fields
-        self.project_name = "Rose"
-        self.version = "0.1.0"
-        self.stage = "1.1"
-        self.base_dir = Path.cwd()
-        self.model_dir = Path("./models")
-        self.data_dir = Path("./data")
-        self.output_dir = Path("./outputs")
-        self.log_dir = Path("./logs")
-        self.config_dir = Path("./configs")
-        self.model_path = "./models/Qwen_Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf"
-        self.model_name = "qwen2.5-vl-7b-instruct"
-        self.model_context_length = 4096
-        self.mmproj_path = "./models/mmproj-Qwen_Qwen2.5-VL-7B-Instruct-f16.gguf"
-        self.llm_provider = "local"
-        self.llm_temperature = 0.7
-        self.llm_top_p = 0.9
-        self.llm_max_tokens = 2048
-        self.llm_repeat_penalty = 1.1
-        self.llm_gpu_layers = 0
-        self.llm_batch_size = 512
-        self.llm_verbose = False
-        self.llm_timeout = 120
-        self.log_level = "INFO"
-        self.log_file = "./logs/agent.log"
-        self.log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        self.agent_verbose = False
-        self.agent_max_history = 50
-        self.agent_require_confirmation = True
-        self.agent_log_commands = True
-        self.max_plan_steps = 12
-        self.max_tool_calls = 20
-        self.max_replans = 3
-        self.max_step_retries = 2
-        self.max_task_duration = 300.0
-        
-        # OS control settings
-        self.os_control_enabled = True
-        self.screen_capture_enabled = True
-        self.max_screenshot_width = 4096
-        self.max_screenshot_height = 4096
-        self.max_screenshot_size_mb = 20
-        self.system_info_enabled = True
-        self.mouse_control_enabled = False
-        self.keyboard_control_enabled = False
-        self.window_control_enabled = False
-        self.max_mouse_actions_per_request = 20
-        self.max_keyboard_actions_per_request = 20
-        self.max_typed_text_length = 1000
-        self.mouse_action_timeout = 5.0
-        self.keyboard_action_timeout = 5.0
-        self.max_scroll_amount = 10
-        
-        # Browser automation settings
-        self.browser_automation_enabled = False
-        self.browser_headless = True
-        self.browser_max_sessions = 2
-        self.browser_max_tabs = 5
-        self.browser_navigation_timeout = 30000
-        self.browser_action_timeout = 10000
-        self.browser_max_page_text_chars = 20000
-        self.browser_max_page_text_tokens = 5000
-        self.browser_max_elements_returned = 100
-        self.browser_max_input_text_length = 2000
-        self.browser_interaction_timeout = 10000
-        self.browser_max_interactions_per_request = 20
-        self.browser_max_wait_timeout = 15000
-        
-        # Browser screenshot settings
-        self.browser_screenshot_enabled = False
-        self.browser_max_screenshot_width = 3840
-        self.browser_max_screenshot_height = 2160
-        self.browser_max_full_page_height = 10000
-        self.browser_max_screenshot_size_mb = 20
-        self.browser_max_screenshots_per_request = 10
-        self.browser_screenshot_timeout = 10000
-        
-        # Vision settings
-        self.vision_enabled = False
-        self.vision_provider_type = "local"  # "local" = stub, "real" = RealVisionProvider with preprocessing
-        self.vision_model_path = ""
-        self.vision_max_image_size_mb = 20
-        self.vision_max_image_width = 4096
-        self.vision_max_image_height = 4096
-        self.vision_max_elements = 100
-        self.vision_analysis_timeout = 30000
-        
-        # Grounding settings
-        self.grounding_confidence_threshold = 0.3
-        self.grounding_stale_timeout = 30.0
-        
-        # OCR settings
-        self.ocr_enabled = True
-        self.ocr_provider_type = "local_tesseract"
-        self.ocr_language = "eng"
-        self.ocr_config = "--psm 6"
-        self.ocr_max_image_size_mb = 20
-        self.ocr_max_image_width = 4096
-        self.ocr_max_image_height = 4096
-        self.ocr_max_text_chars = 100000
-        self.ocr_max_blocks = 1000
-        self.ocr_timeout_ms = 30000
-        
-        # Multimodal settings
-        self.multimodal_enabled = False
-        self.multimodal_max_ocr_chars = 2000
-        self.multimodal_max_targets = 15
-        self.multimodal_include_coordinates = True
-        self.multimodal_include_image_path = True
-        self.autonomous_vision_enabled = False
-        self.autonomous_max_retries = 3
-        self.autonomous_screenshot_delay = 1.0
-        
-        # Set base directory
-        if config_dir:
-            self.base_dir = config_dir
-        else:
-            self.base_dir = Path(__file__).parent.parent.parent
+        # Set base directory from config_dir if explicitly provided
+        # The default config_dir is "./configs", so if it's different, use it as base
+        default_config_dir = Path("./configs")
+        if self.config_dir != default_config_dir and self.config_dir.exists():
+            self.base_dir = self.config_dir
         
         # Load environment variables
         load_dotenv()

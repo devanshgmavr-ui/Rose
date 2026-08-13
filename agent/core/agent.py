@@ -82,6 +82,10 @@ from ..browser import (
     BrowserScreenshotTool,
     register_browser_permissions,
 )
+from ..media.vision_decision import VisionDecisionSystem, VisionSource, VisionRequirement
+from ..media.multimodal_pipeline import MultimodalRequestPipeline, RequestType
+from .model_health import ModelHealthChecker, ModelHealthStatus
+from ..orchestration.autonomous_loop import AutonomousLoop
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +152,13 @@ class Agent:
         self._browser_page_read_tool: Optional[BrowserPageReadTool] = None
         self._browser_interaction_tool: Optional[BrowserInteractionTool] = None
         self._browser_screenshot_tool: Optional[BrowserScreenshotTool] = None
+        
+        # New production components
+        self._vision_decision = VisionDecisionSystem()
+        self._multimodal_pipeline = MultimodalRequestPipeline()
+        self._model_health_checker = ModelHealthChecker(config=self.config)
+        self._autonomous_loop: Optional[AutonomousLoop] = None
+        self._vision_pipeline = None
         
         logger.info(f"Agent initialized: {self.config.project_name} v{self.config.version}")
     
@@ -217,6 +228,12 @@ class Agent:
             
             self._init_memory_system()
             self._init_tool_system()
+            self._init_autonomous_loop()
+            self._init_vision_pipeline()
+            
+            # Check model health
+            self._model_health = self._model_health_checker.check_health(self._llm_provider)
+            logger.info(f"Model health: {self._model_health.status_summary}")
             
             logger.info("Agent initialized successfully")
             return True
@@ -224,6 +241,33 @@ class Agent:
         except Exception as e:
             logger.error(f"Agent initialization failed: {e}")
             return False
+    
+    def _init_autonomous_loop(self):
+        """Initialize the autonomous execution loop."""
+        if not self._tool_router:
+            logger.warning("Cannot initialize autonomous loop without tool router")
+            return
+        
+        self._autonomous_loop = AutonomousLoop(
+            tool_router=self._tool_router,
+            permission_manager=self._permission_manager,
+            limits=self._orchestration_limits,
+            event_logger=self._event_logger,
+        )
+        logger.info("Autonomous loop initialized")
+    
+    def _init_vision_pipeline(self):
+        """Initialize the unified vision pipeline."""
+        try:
+            from ..media.vision_pipeline import VisionPipeline
+            self._vision_pipeline = VisionPipeline(
+                llm_provider=self._llm_provider,
+                vision_provider=self._vision_provider,
+                prefer_vl=True,
+            )
+            logger.info("Vision pipeline initialized")
+        except Exception as e:
+            logger.warning(f"Vision pipeline initialization failed: {e}")
     
     def _init_tool_system(self):
         """Initialize the tool system."""
@@ -559,7 +603,7 @@ class Agent:
         return response
     
     def chat(self, message: str, **kwargs) -> LLMResponse:
-        """Chat with the agent with memory and tool context."""
+        """Chat with the agent with memory, vision, and tool context."""
         if self._llm_provider is None:
             raise RuntimeError("Agent not initialized. Call initialize() first.")
         
@@ -569,7 +613,22 @@ class Agent:
                 logger.info("Summarizing conversation to free context space")
                 self._summarizer.summarize_and_compress()
         
+        # Check if vision is needed
+        vision_decision = self._vision_decision.decide(message)
+        logger.debug(f"Vision decision: {vision_decision.requirement.value} - {vision_decision.reasoning}")
+        
+        # If vision is required and we have a screenshot, analyze it
+        vision_context = ""
+        if vision_decision.requirement == VisionRequirement.REQUIRED and vision_decision.needs_screenshot:
+            vision_context = self._handle_vision_request(message, vision_decision)
+        
         tool_context = []
+        if vision_context:
+            tool_context.append({
+                "role": "system",
+                "content": f"Visual context from screen analysis:\n{vision_context}",
+            })
+        
         iteration = 0
         
         while iteration < self._max_tool_iterations:
@@ -631,6 +690,40 @@ class Agent:
         logger.debug(f"Chat response generated: {response_text[:50]}...")
         
         return response
+    
+    def _handle_vision_request(self, message: str, vision_decision) -> str:
+        """Handle a request that requires visual context."""
+        try:
+            # Capture screen
+            if self._screen_capture_tool:
+                capture_result = self._screen_capture_tool.execute({"action": "capture"})
+                if capture_result.success:
+                    screenshot_path = capture_result.output
+                    
+                    # Use vision pipeline if available
+                    if self._vision_pipeline:
+                        from ..media.vision_pipeline import VisionMode
+                        mode = VisionMode.VL_NATIVE if self._vision_pipeline.is_vl_available else VisionMode.CLASSICAL
+                        result = self._vision_pipeline.analyze_screenshot(
+                            screenshot_path=screenshot_path,
+                            query=message,
+                            mode=mode,
+                        )
+                        if result.success:
+                            return result.description
+                    
+                    # Fallback to vision analyzer
+                    if hasattr(self, '_vision_analyzer') and self._vision_analyzer:
+                        from ..media.base import VisionRequest
+                        request = VisionRequest(image_path=screenshot_path)
+                        result = self._vision_analyzer.analyze(request)
+                        if result and hasattr(result, 'description'):
+                            return result.description
+            
+            return "Unable to capture screen for visual analysis"
+        except Exception as e:
+            logger.error(f"Vision request failed: {e}")
+            return f"Vision analysis failed: {str(e)}"
     
     def _parse_tool_request(self, text: str) -> Optional[ToolRequest]:
         """Parse a tool request from LLM output."""
@@ -730,6 +823,37 @@ class Agent:
         
         self._current_task = task
         return task
+    
+    def execute_autonomous(self, user_request: str) -> 'AutonomousTaskState':
+        """Execute a task using the autonomous loop.
+        
+        Args:
+            user_request: Natural language objective from user.
+            
+        Returns:
+            AutonomousTaskState with full execution results.
+        """
+        if not self._autonomous_loop:
+            raise RuntimeError("Autonomous loop not initialized")
+        
+        logger.info(f"Autonomous execution: {user_request[:100]}...")
+        state = self._autonomous_loop.execute(user_request)
+        
+        # Store task result in memory if successful
+        if state.phase.value == "completed" and self._long_term_memory:
+            try:
+                from ..memory.base import MemoryType, MemoryRecord
+                record = MemoryRecord(
+                    content=f"Completed task: {user_request[:200]}. Result: {(state.result or '')[:200]}",
+                    memory_type=MemoryType.TASK_INFO,
+                    importance=0.7,
+                    confidence=0.9,
+                )
+                self._long_term_memory.store(record)
+            except Exception as e:
+                logger.warning(f"Failed to store task memory: {e}")
+        
+        return state
     
     def get_task(self, task_id: str) -> Optional[Task]:
         """Get a task by ID."""
@@ -909,9 +1033,18 @@ class Agent:
             },
             "orchestration": {
                 "initialized": self._planner is not None,
+                "autonomous_loop": self._autonomous_loop is not None,
             },
             "media": {
                 "initialized": self._media_router is not None,
+            },
+            "vision_pipeline": {
+                "initialized": self._vision_pipeline is not None,
+                "vl_available": self._vision_pipeline.is_vl_available if self._vision_pipeline else False,
+            },
+            "vision_decision": {
+                "initialized": self._vision_decision is not None,
+                "stats": self._vision_decision.get_stats() if self._vision_decision else {},
             },
             "os_control": {
                 "initialized": self.config.os_control_enabled,
@@ -953,6 +1086,10 @@ class Agent:
         
         if self._orchestration_limits:
             status["orchestration"]["limits"] = self._orchestration_limits.to_dict()
+        
+        # Add model health status
+        if hasattr(self, '_model_health'):
+            status["model_health"] = self._model_health.to_dict()
         
         return status
     
@@ -1010,6 +1147,10 @@ class Agent:
         self._mouse_tool = None
         self._keyboard_tool = None
         self._window_tool = None
+        self._autonomous_loop = None
+        self._vision_pipeline = None
+        self._vision_decision = None
+        self._multimodal_pipeline = None
         
         if self._browser_manager:
             self._browser_manager.shutdown()
