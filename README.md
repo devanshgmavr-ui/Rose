@@ -6,7 +6,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-1528%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-1774%20passing-brightgreen.svg)](#testing)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078d4.svg)](https://www.microsoft.com/windows)
 [![GPU](https://img.shields.io/badge/GPU-CUDA-76b900.svg)](https://developer.nvidia.com/cuda-zone)
 
@@ -200,6 +200,11 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 | **Phase 7** | End-to-End (run.py, First-Run, Startup) | ✅ Complete |
 | **Phase 8** | Packaging (pyproject.toml, Installer, Releases) | ✅ Complete |
 | **Phase 9** | Autonomous Tool Selection & Prompt Execution | ✅ Complete |
+| **Phase 10** | Vision / Visual Understanding (RealVisionProvider) | ✅ Complete |
+| **Phase 11** | Multimodal Agent Integration (Tool Selection) | ✅ Complete |
+| **Phase 12** | Backend API & Event System | ✅ Complete |
+| **Phase 13** | Observation, Verification & Failure Recovery | ✅ Complete |
+| **Phase 14** | Memory Integration & Event Streaming Foundation | ✅ Complete |
 
 ### Detailed Breakdown
 
@@ -259,6 +264,23 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 - 9.5 Constraint Parsing — Prohibited tools, allowed files, minimize confirmations
 - 9.6 ExecutionTrace — Concise UI-visible operational trace
 - 9.7 67ms Controlled Typing — Enforced at keyboard execution layer
+</details>
+
+<details>
+<summary><strong>Phase 10-14: Backend Hardening & Integration</strong></summary>
+
+- 10.1 RealVisionProvider — Image preprocessing, color analysis, region detection, OCR integration
+- 10.2 ImagePreprocessor — Safe loading, metadata extraction, format detection
+- 11.1 Multimodal Integration — Vision tools wired into agent and autonomous tool selection
+- 11.2 Config Vision Provider — Selectable "local" or "real" vision provider
+- 11.3 Tool Catalog Enhancement — Refined keywords for vision, grounding, OCR
+- 12.1 Backend API — Fixed path param extraction, new capabilities/permissions/system endpoints
+- 12.2 ApplicationService — get_capabilities(), get_permissions(), get_system_status()
+- 13.1 ObservationSystem — ACTION→OBSERVATION→STATE→VERIFICATION pipeline
+- 13.2 FailureRecovery — Error classification and recovery decision-making (8 error categories)
+- 13.3 Tool Fallbacks — Alternative tool selection on failure
+- 14.1 MemoryIntegration — Task result storage, tool history, memory-augmented context
+- 14.2 Memory Statistics — Tool and task execution stats
 </details>
 
 ---
@@ -397,7 +419,7 @@ Solution: `pip install playwright && python -m playwright install chromium`
 
 ## Testing
 
-**1528 unit tests** — all passing
+**1774 unit tests** — all passing
 
 ```powershell
 # Run all tests
@@ -429,7 +451,13 @@ python -m pytest tests/unit/ --cov=agent
 | Application Service | 63 | Full |
 | UI Components | 83 | Full |
 | Startup/Packaging | 67 | Full |
-| **Total** | **1459** | **Full** |
+| Phase 9 Autonomous | 101 | Full |
+| Phase 10 Vision | 31 | Full |
+| Phase 11 Multimodal | 32 | Full |
+| Phase 12 Backend API | 58 | Full |
+| Phase 13 Observ/Recovery | 55 | Full |
+| Phase 14 Memory Integration | 24 | Full |
+| **Total** | **1774** | **Full** |
 
 ---
 
