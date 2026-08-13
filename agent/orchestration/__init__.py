@@ -45,6 +45,11 @@ from .recovery import (
     ErrorCategory, RecoveryStrategy, TOOL_FALLBACKS,
 )
 
+# Phase 14 imports
+from .memory_integration import (
+    MemoryIntegration, TaskMemoryRecord, ToolExecutionRecord,
+)
+
 __all__ = [
     # Existing
     "TaskStatus",
@@ -99,4 +104,8 @@ __all__ = [
     "ErrorCategory",
     "RecoveryStrategy",
     "TOOL_FALLBACKS",
+    # Phase 14
+    "MemoryIntegration",
+    "TaskMemoryRecord",
+    "ToolExecutionRecord",
 ]
