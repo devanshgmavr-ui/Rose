@@ -6,7 +6,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-1817%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-1878%20passing-brightgreen.svg)](#testing)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078d4.svg)](https://www.microsoft.com/windows)
 [![GPU](https://img.shields.io/badge/GPU-CUDA-76b900.svg)](https://developer.nvidia.com/cuda-zone)
 
@@ -125,6 +125,13 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 - **Security Boundaries** — OCR output treated as untrusted, never executes commands
 - **Grounding Integration** — OCR text with bounding boxes feeds into visual grounding
 
+### 🧩 Multimodal Messaging
+- **Content Types** — TextContent, ImageContent, OCRContent, GroundingContent, VisionSummaryContent
+- **VisionContextBuilder** — Converts vision results to LLM-ready text context
+- **Screenshot-to-Action Pipeline** — Screenshot → OCR → Grounding → LLM → Action
+- **Autonomous Vision** — Vision context injected into autonomous task execution
+- **Security** — All visual content wrapped in [UNTRUSTED] markers
+
 ### 📁 File & Code
 - **File Automation** — Read, write, copy, move, search files
 - **Code Execution** — Run Python in a sandboxed subprocess
@@ -213,6 +220,8 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 | **Phase 12** | Backend API & Event System | ✅ Complete |
 | **Phase 13** | Observation, Verification & Failure Recovery | ✅ Complete |
 | **Phase 14** | Memory Integration & Event Streaming Foundation | ✅ Complete |
+| **Phase 15** | Vision + OCR Pipeline (OCRProvider, structured results) | ✅ Complete |
+| **Phase 16** | Multimodal Messaging (VisionContextBuilder, screenshot-to-action) | ✅ Complete |
 
 ### Detailed Breakdown
 
@@ -289,6 +298,21 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 - 13.3 Tool Fallbacks — Alternative tool selection on failure
 - 14.1 MemoryIntegration — Task result storage, tool history, memory-augmented context
 - 14.2 Memory Statistics — Tool and task execution stats
+</details>
+
+<details>
+<summary><strong>Phase 15-16: Vision Pipeline & Multimodal Messaging</strong></summary>
+
+- 15.1 OCRProvider Abstraction — Pluggable OCR engine interface
+- 15.2 LocalOCRProvider — Tesseract-based OCR with language/config support
+- 15.3 OCRResult/OCRBlock — Structured results with text, confidence, bounding boxes
+- 15.4 OCR Security — Untrusted content markers, resource limits, no execution paths
+- 15.5 VisionProvider Integration — RealVisionProvider uses OCRProvider abstraction
+- 15.6 Grounding Integration — OCR text classified and grounded to screen coordinates
+- 16.1 MultimodalMessage — TextContent, ImageContent, OCRContent, GroundingContent
+- 16.2 VisionContextBuilder — Converts vision results to LLM-ready text context
+- 16.3 Screenshot-to-Action Pipeline — Screenshot → OCR → Grounding → LLM → Action
+- 16.4 Autonomous Vision — Vision context injected into autonomous task execution
 </details>
 
 ---
@@ -372,6 +396,13 @@ OCR_MAX_IMAGE_SIZE_MB=20
 OCR_MAX_TEXT_CHARS=100000
 OCR_MAX_BLOCKS=1000
 OCR_TIMEOUT_MS=30000
+
+# Multimodal (disabled by default)
+MULTIMODAL_ENABLED=false
+MULTIMODAL_MAX_OCR_CHARS=2000
+MULTIMODAL_MAX_TARGETS=15
+AUTONOMOUS_VISION_ENABLED=false
+AUTONOMOUS_MAX_RETRIES=3
 ```
 
 See `.env.example` for all options.
@@ -436,11 +467,17 @@ Solution: `pip install playwright && python -m playwright install chromium`
 
 ## Testing
 
-**1817 unit tests** — all passing
+**1878 unit tests** — all passing
 
 ```powershell
 # Run all tests
 python -m pytest tests/unit/ -v
+
+# Run multimodal message tests
+python -m pytest tests/unit/test_multimodal.py -v
+
+# Run vision→LLM integration tests
+python -m pytest tests/unit/test_vision_llm_integration.py -v
 
 # Run OCR tests specifically
 python -m pytest tests/unit/test_ocr.py -v
@@ -484,7 +521,9 @@ python -m pytest tests/unit/ --cov=agent
 | Phase 13 Observ/Recovery | 55 | Full |
 | Phase 14 Memory Integration | 24 | Full |
 | OCR Pipeline | 62 | Full |
-| **Total** | **1817** | **Full** |
+| Multimodal Messages | 55 | Full |
+| Vision→LLM Integration | 6 | Full |
+| **Total** | **1878** | **Full** |
 
 ---
 

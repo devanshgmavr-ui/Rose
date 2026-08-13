@@ -57,6 +57,20 @@ from .ocr import (
     OCRBlock,
     OCRStatus,
 )
+from .multimodal import (
+    MultimodalMessage,
+    TextContent,
+    ImageContent,
+    OCRContent,
+    GroundingContent,
+    VisionSummaryContent,
+    VisionContextBuilder,
+    ContentType,
+    ContentPart,
+    create_content_part,
+    serialize_content_parts,
+    deserialize_content_parts,
+)
 
 __all__ = [
     "MediaType",
@@ -108,6 +122,18 @@ __all__ = [
     "OCRResult",
     "OCRBlock",
     "OCRStatus",
+    "MultimodalMessage",
+    "TextContent",
+    "ImageContent",
+    "OCRContent",
+    "GroundingContent",
+    "VisionSummaryContent",
+    "VisionContextBuilder",
+    "ContentType",
+    "ContentPart",
+    "create_content_part",
+    "serialize_content_parts",
+    "deserialize_content_parts",
     "MEDIA_TYPE_EXTENSIONS",
     "MEDIA_MIME_TYPES",
 ]

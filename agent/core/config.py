@@ -215,6 +215,16 @@ class Config:
         self.ocr_max_blocks = 1000
         self.ocr_timeout_ms = 30000
         
+        # Multimodal settings
+        self.multimodal_enabled = False
+        self.multimodal_max_ocr_chars = 2000
+        self.multimodal_max_targets = 15
+        self.multimodal_include_coordinates = True
+        self.multimodal_include_image_path = True
+        self.autonomous_vision_enabled = False
+        self.autonomous_max_retries = 3
+        self.autonomous_screenshot_delay = 1.0
+        
         # Set base directory
         if config_dir:
             self.base_dir = config_dir
@@ -394,6 +404,16 @@ class Config:
         self.ocr_max_text_chars = int(os.getenv("OCR_MAX_TEXT_CHARS", str(self.ocr_max_text_chars)))
         self.ocr_max_blocks = int(os.getenv("OCR_MAX_BLOCKS", str(self.ocr_max_blocks)))
         self.ocr_timeout_ms = int(os.getenv("OCR_TIMEOUT_MS", str(self.ocr_timeout_ms)))
+        
+        # Multimodal settings
+        self.multimodal_enabled = os.getenv("MULTIMODAL_ENABLED", "false").lower() == "true"
+        self.multimodal_max_ocr_chars = int(os.getenv("MULTIMODAL_MAX_OCR_CHARS", str(self.multimodal_max_ocr_chars)))
+        self.multimodal_max_targets = int(os.getenv("MULTIMODAL_MAX_TARGETS", str(self.multimodal_max_targets)))
+        self.multimodal_include_coordinates = os.getenv("MULTIMODAL_INCLUDE_COORDINATES", "true").lower() == "true"
+        self.multimodal_include_image_path = os.getenv("MULTIMODAL_INCLUDE_IMAGE_PATH", "true").lower() == "true"
+        self.autonomous_vision_enabled = os.getenv("AUTONOMOUS_VISION_ENABLED", "false").lower() == "true"
+        self.autonomous_max_retries = int(os.getenv("AUTONOMOUS_MAX_RETRIES", str(self.autonomous_max_retries)))
+        self.autonomous_screenshot_delay = float(os.getenv("AUTONOMOUS_SCREENSHOT_DELAY", str(self.autonomous_screenshot_delay)))
     
     def _ensure_directories(self):
         """Ensure all required directories exist."""
