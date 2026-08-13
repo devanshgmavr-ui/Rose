@@ -639,8 +639,8 @@ Rose/
 ├── run.py                    # Main entry point
 ├── install.bat               # Windows installer
 ├── pyproject.toml            # Package configuration
-├── requirements.txt          # Python dependencies
-├── .env.example              # Environment template
+├── requirements-runtime.txt  # Runtime dependencies
+├── .env.example              # Config template
 └── README.md                 # This file
 ```
 
@@ -693,7 +693,7 @@ Rose/
 ├── run.py              # Entry point
 ├── install.bat         # Installer
 ├── pyproject.toml      # Package config
-├── requirements.txt    # Dependencies
+├── requirements-runtime.txt  # Dependencies
 ├── .env.example        # Config template
 └── README.md           # Documentation
 ```
@@ -706,7 +706,7 @@ Rose/
 ├── agent/memory/       # Memory system
 ├── agent/tools/        # Tool system
 ├── run.py
-└── requirements.txt
+└── requirements-runtime.txt
 ```
 
 ---
