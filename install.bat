@@ -401,12 +401,12 @@ if %MODEL_FOUND% equ 0 (
     echo   No .gguf model files found in models/ directory.
     echo.
     echo   Please download the Qwen2.5-VL-7B-Instruct GGUF files:
-    echo     1. Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf (main model, ~4.4GB)
-    echo     2. Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf (vision projector, ~1.3GB)
+    echo     1. Qwen_Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf (main model, ~4.7GB)
+    echo     2. mmproj-Qwen_Qwen2.5-VL-7B-Instruct-f16.gguf (vision projector, ~1.3GB)
     echo.
     echo   Place both files in the models/ folder.
     echo.
-    echo   Download from: https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct-GGUF
+    echo   Download from: https://huggingface.co/bartowski/Qwen_Qwen2.5-VL-7B-Instruct-GGUF
 )
 
 echo.

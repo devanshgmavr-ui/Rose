@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 
 from .config import Config
-from ..llm.base import LLMProvider, LLMConfig, LLMResponse, LLMProviderType
+from ..llm.base import LLMProvider, LLMConfig, LLMResponse, LLMProviderType, VisionCapability, ImageInput
 from ..llm.local_provider import LocalLLMProvider
 from ..memory import (
     SessionManager,
@@ -170,6 +170,12 @@ class Agent:
                 if mmproj_full.exists():
                     mmproj_path = str(mmproj_full)
             
+            # Determine vision capability
+            from ..llm.base import VisionCapability
+            vision_cap = VisionCapability.NONE
+            if mmproj_path:
+                vision_cap = VisionCapability.MULTIPLE
+            
             llm_config = LLMConfig(
                 provider_type=LLMProviderType.LOCAL,
                 model_path=str(self.config.get_model_full_path()),
@@ -183,6 +189,8 @@ class Agent:
                 n_batch=self.config.llm_batch_size,
                 verbose=self.config.llm_verbose,
                 mmproj_path=mmproj_path,
+                vision_capability=vision_cap,
+                max_images=4 if mmproj_path else 0,
             )
             return LocalLLMProvider(llm_config)
         

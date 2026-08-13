@@ -142,7 +142,7 @@ def check_model():
     from dotenv import load_dotenv
     load_dotenv(PROJECT_ROOT / ".env")
     
-    model_path = os.getenv("MODEL_PATH", "./models/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf")
+    model_path = os.getenv("MODEL_PATH", "./models/Qwen_Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf")
     full_path = PROJECT_ROOT / model_path
     
     if full_path.exists():
@@ -152,7 +152,7 @@ def check_model():
         return f"Not found: {full_path}"
     
     # Check mmproj (vision projector) for VL models
-    mmproj_path = os.getenv("MMPROJ_PATH", "./models/Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf")
+    mmproj_path = os.getenv("MMPROJ_PATH", "./models/mmproj-Qwen_Qwen2.5-VL-7B-Instruct-f16.gguf")
     mmproj_full = PROJECT_ROOT / mmproj_path
     if mmproj_full.exists():
         size_gb = mmproj_full.stat().st_size / (1024**3)

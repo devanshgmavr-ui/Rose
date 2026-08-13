@@ -35,10 +35,10 @@ class Config:
     config_dir: Path = field(default_factory=lambda: Path("./configs"))
     
     # Model settings
-    model_path: str = "./models/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf"
+    model_path: str = "./models/Qwen_Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf"
     model_name: str = "qwen2.5-vl-7b-instruct"
     model_context_length: int = 4096
-    mmproj_path: str = "./models/Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf"
+    mmproj_path: str = "./models/mmproj-Qwen_Qwen2.5-VL-7B-Instruct-f16.gguf"
     
     # LLM settings
     llm_provider: str = "local"
@@ -50,6 +50,16 @@ class Config:
     llm_batch_size: int = 512
     llm_verbose: bool = False
     llm_timeout: int = 120
+    
+    # Vision-Language settings
+    vision_enabled: bool = True
+    vision_max_images: int = 4
+    vision_max_image_size_mb: int = 20
+    vision_max_image_width: int = 4096
+    vision_max_image_height: int = 4096
+    vision_grounding_enabled: bool = True
+    vision_screen_understanding: bool = True
+    vision_browser_integration: bool = True
     
     # Logging settings
     log_level: str = "INFO"
@@ -124,10 +134,10 @@ class Config:
         self.output_dir = Path("./outputs")
         self.log_dir = Path("./logs")
         self.config_dir = Path("./configs")
-        self.model_path = "./models/Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf"
+        self.model_path = "./models/Qwen_Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf"
         self.model_name = "qwen2.5-vl-7b-instruct"
         self.model_context_length = 4096
-        self.mmproj_path = "./models/Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf"
+        self.mmproj_path = "./models/mmproj-Qwen_Qwen2.5-VL-7B-Instruct-f16.gguf"
         self.llm_provider = "local"
         self.llm_temperature = 0.7
         self.llm_top_p = 0.9

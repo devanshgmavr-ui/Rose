@@ -6,7 +6,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-1878%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-1954%20passing-brightgreen.svg)](#testing)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078d4.svg)](https://www.microsoft.com/windows)
 [![GPU](https://img.shields.io/badge/GPU-CUDA-76b900.svg)](https://developer.nvidia.com/cuda-zone)
 
@@ -138,40 +138,45 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    User Interface                        │
-│              (CLI / Web / PySide6 GUI)                   │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────┐
-│              Application Service (Phase 5)               │
-│     Chat API · Task API · Health API · Event Bus         │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────┐
-│                  Rose Agent Core                         │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
-│  │   LLM    │ │  Memory  │ │ Planner  │ │ Verifier │   │
-│  │ Qwen VL  │ │ Short +  │ │ NL →     │ │ Result   │   │
-│  │ CUDA GPU │ │ Long Term│ │ Plan     │ │ Check    │   │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────┐
-│                  Tool Router                              │
-│          Permissions · Audit · Confirmation               │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-    ┌─────────┬───────┼───────┬─────────┬─────────┐
-    │         │       │       │         │         │
-┌───▼──┐ ┌───▼──┐ ┌──▼──┐ ┌──▼──┐ ┌───▼──┐ ┌───▼──┐
-│Files │ │Code │ │ CLI │ │ OS  │ │Browser│ │Vision│
-│R/W/S │ │Exec │ │Exec │ │Ctrl │ │PW    │ │Analyze│
-└──────┘ └─────┘ └─────┘ └─────┘ └──────┘ └──────┘
-    │         │       │       │         │         │
-┌───▼─────────▼───────▼───────▼─────────▼─────────▼───┐
-│              Windows / Filesystem / Browser            │
-└──────────────────────────────────────────────────────┘
+                    USER
+                      ↓
+                 Agent API
+                      ↓
+             Context + Memory
+                      ↓
+             Task Understanding
+                      ↓
+              QWEN2.5-VL
+             ↙     ↓      ↘
+          TEXT   IMAGE   STATE
+             ↘     ↓      ↙
+                REASONING
+                    ↓
+                  PLAN
+                    ↓
+              TOOL SELECTION
+                    ↓
+             PERMISSION CHECK
+                    ↓
+                TOOL ROUTER
+                    ↓
+        ┌───────────┼────────────┐
+        ↓           ↓            ↓
+      OS Tools   Browser       Vision
+        ↓           ↓            ↓
+        └───────────┼────────────┘
+                    ↓
+                OBSERVATION
+                    ↓
+              QWEN2.5-VL
+                    ↓
+               VERIFICATION
+                    ↓
+              FAILURE RECOVERY
+                    ↓
+                 MEMORY
+                    ↓
+             FINAL RESPONSE
 ```
 
 ### Component Stack
@@ -181,7 +186,10 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 | **UI** | `agent/ui/` | PySide6 desktop app with chat, tasks, settings |
 | **Web** | `agent/web/` | REST API, SSE streaming, ApplicationService |
 | **Core** | `agent/core/` | Agent, Config, Health, Performance, Resources |
-| **LLM** | `agent/llm/` | Local provider with CUDA, VL support via Llava16ChatHandler |
+| **LLM** | `agent/llm/` | Local provider with CUDA, VL support via Llava16ChatHandler, VisionCapability abstraction |
+| **Vision Pipeline** | `agent/media/vision_pipeline.py` | Unified VL + classical fallback routing |
+| **Screen Understanding** | `agent/media/screen_understanding.py` | VL-based screen analysis |
+| **System Prompt** | `agent/core/system_prompt.py` | Prompt injection defense, VL-aware prompts |
 | **Memory** | `agent/memory/` | Session, conversation, long-term SQLite |
 | **Tools** | `agent/tools/` | 15+ tools with permissions and audit |
 | **Orchestration** | `agent/orchestration/` | Planner, executor, verifier, autonomous |
@@ -339,17 +347,17 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 
 ### Setup
 
-1. Download from [Hugging Face](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct-GGUF)
+1. Download from [Hugging Face](https://huggingface.co/bartowski/Qwen_Qwen2.5-VL-7B-Instruct-GGUF)
 2. Place both files in `models/` directory:
-   - `Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf` (main model)
-   - `Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf` (vision projector)
+   - `Qwen_Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf` (main model)
+   - `mmproj-Qwen_Qwen2.5-VL-7B-Instruct-f16.gguf` (vision projector)
 3. Models auto-discovered on startup
 
 ```
 Rose/
   models/
-    Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
-    Qwen2.5-VL-7B-Instruct-mmproj-f16.gguf
+    Qwen_Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf
+    mmproj-Qwen_Qwen2.5-VL-7B-Instruct-f16.gguf
 ```
 
 > **Future Goal:** Develop a custom trained model specifically for autonomous agent tasks.
@@ -461,11 +469,14 @@ Solution: `pip install playwright && python -m playwright install chromium`
 
 ## Testing
 
-**1878 unit tests** — all passing
+**1954 unit tests** — all passing
 
 ```powershell
 # Run all tests
 python -m pytest tests/unit/ -v
+
+# Run VL pipeline tests
+python -m pytest tests/unit/test_vl_pipeline.py -v
 
 # Run multimodal message tests
 python -m pytest tests/unit/test_multimodal.py -v
@@ -517,7 +528,8 @@ python -m pytest tests/unit/ --cov=agent
 | OCR Pipeline | 62 | Full |
 | Multimodal Messages | 55 | Full |
 | Vision→LLM Integration | 6 | Full |
-| **Total** | **1878** | **Full** |
+| VL Pipeline (Phase 17) | 76 | Full |
+| **Total** | **1954** | **Full** |
 
 ---
 

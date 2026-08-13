@@ -448,11 +448,34 @@ class MultimodalMessage:
             metadata=data.get("metadata", {}),
         )
 
-    def to_llm_message(self) -> Dict[str, str]:
-        """Convert to LLM-compatible message dict (text-only).
+    def to_llm_message(self) -> Dict[str, Any]:
+        """Convert to LLM-compatible message dict.
 
-        All visual content is converted to descriptive text.
+        For text-only LLMs, all visual content is converted to descriptive text.
+        For VL models, images are passed as image_url content blocks.
         """
+        # Check if any image parts have file paths (for VL model)
+        image_parts = [p for p in self.content_parts if p.content_type == ContentType.IMAGE]
+        if image_parts and hasattr(image_parts[0], 'image_path') and image_parts[0].image_path:
+            # Build multimodal message for VL model
+            content = []
+            for part in self.content_parts:
+                if part.content_type == ContentType.IMAGE:
+                    img: ImageContent = part
+                    content.append({
+                        "type": "image_url",
+                        "image_url": {"url": img.image_path}
+                    })
+                elif part.content_type == ContentType.TEXT:
+                    content.append({"type": "text", "text": part.to_text()})
+                else:
+                    # Convert other types to text
+                    text = part.to_text()
+                    if text:
+                        content.append({"type": "text", "text": text})
+            return {"role": self.role, "content": content}
+        
+        # Fallback: text-only message
         return {
             "role": self.role,
             "content": self.to_text(),
@@ -674,6 +697,99 @@ class VisionContextBuilder:
             "role": "user",
             "content": f"Task: {task_objective}\n\nWhat is the next action?",
         })
+
+        return messages
+
+    def build_vl_context_for_llm(
+        self,
+        image_path: str,
+        user_query: str,
+        vision_summary: Optional[VisionSummaryContent] = None,
+        system_prompt: str = "",
+    ) -> List[Dict[str, Any]]:
+        """Build LLM message list with native image input for VL models.
+
+        Passes the image directly to the VL model instead of converting
+        to text descriptions. Falls back to text if vision_summary provided.
+
+        Args:
+            image_path: Path to the screenshot/image file
+            user_query: User's question about the image
+            vision_summary: Optional pre-computed vision summary for text fallback
+            system_prompt: Optional system prompt
+
+        Returns:
+            List of message dicts with image_url content blocks
+        """
+        messages = []
+
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        # Build multimodal content with image
+        content = [
+            {"type": "image_url", "image_url": {"url": image_path}},
+            {"type": "text", "text": user_query},
+        ]
+
+        messages.append({"role": "user", "content": content})
+        return messages
+
+    def build_vl_autonomous_context(
+        self,
+        image_path: str,
+        task_objective: str,
+        previous_actions: Optional[List[str]] = None,
+        retry_count: int = 0,
+    ) -> List[Dict[str, Any]]:
+        """Build autonomous context with native image for VL models.
+
+        Passes the screenshot directly to the VL model for visual reasoning.
+
+        Args:
+            image_path: Path to the screenshot
+            task_objective: What the agent is trying to accomplish
+            previous_actions: Actions already attempted
+            retry_count: Number of retries
+
+        Returns:
+            List of message dicts with image_url content blocks
+        """
+        messages = []
+
+        # System prompt
+        system_parts = [
+            "You are an autonomous agent controlling a Windows PC.",
+            "You can see the screen directly through screenshots.",
+            "Analyze the screenshot and decide the next action.",
+            "",
+            "Available actions:",
+            '- Click at coordinates: {"action": "click", "x": <int>, "y": <int>}',
+            '- Type text: {"action": "type", "text": "<string>"}',
+            '- Scroll: {"action": "scroll", "direction": "up|down", "amount": <int>}',
+            '- Press key: {"action": "key", "key": "<string>"}',
+            '- Wait: {"action": "wait", "seconds": <float>}',
+            '- Done: {"action": "done", "result": "<description>"}',
+            '- Failed: {"action": "failed", "reason": "<description>"}',
+        ]
+        if retry_count > 0:
+            system_parts.append(f"\nRetry attempt {retry_count}. Previous actions may have failed.")
+        messages.append({"role": "system", "content": "\n".join(system_parts)})
+
+        # Previous actions context
+        if previous_actions:
+            actions_text = "\n".join(f"  - {a}" for a in previous_actions[-5:])
+            messages.append({
+                "role": "system",
+                "content": f"Previous actions taken:\n{actions_text}",
+            })
+
+        # Build multimodal content with screenshot
+        content = [
+            {"type": "image_url", "image_url": {"url": image_path}},
+            {"type": "text", "text": f"Task: {task_objective}\n\nAnalyze the screenshot and decide the next action."},
+        ]
+        messages.append({"role": "user", "content": content})
 
         return messages
 

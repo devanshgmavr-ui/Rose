@@ -71,6 +71,16 @@ from .multimodal import (
     serialize_content_parts,
     deserialize_content_parts,
 )
+from .screen_understanding import (
+    ScreenUnderstandingProvider,
+    ScreenUnderstanding,
+    ScreenQuery,
+)
+from .vision_pipeline import (
+    VisionPipeline,
+    VisionPipelineResult,
+    VisionMode,
+)
 
 __all__ = [
     "MediaType",
@@ -134,6 +144,12 @@ __all__ = [
     "create_content_part",
     "serialize_content_parts",
     "deserialize_content_parts",
+    "ScreenUnderstandingProvider",
+    "ScreenUnderstanding",
+    "ScreenQuery",
+    "VisionPipeline",
+    "VisionPipelineResult",
+    "VisionMode",
     "MEDIA_TYPE_EXTENSIONS",
     "MEDIA_MIME_TYPES",
 ]

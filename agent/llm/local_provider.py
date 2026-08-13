@@ -9,7 +9,7 @@ import logging
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 
-from .base import LLMProvider, LLMConfig, LLMResponse, LLMProviderType
+from .base import LLMProvider, LLMConfig, LLMResponse, LLMProviderType, VisionCapability, ImageInput
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,11 @@ class LocalLLMProvider(LLMProvider):
                     verbose=self.config.verbose,
                     logits_all=True,  # Required for VL models
                 )
+                # Auto-detect vision capability
+                if self.config.vision_capability == VisionCapability.NONE:
+                    self.config.vision_capability = VisionCapability.MULTIPLE
+                    self.config.max_images = 4
+                    logger.info("Auto-detected vision capability: MULTIPLE")
             else:
                 self._llama = Llama(
                     model_path=str(self._model_path),
@@ -166,7 +171,7 @@ class LocalLLMProvider(LLMProvider):
             logger.error(f"Generation failed: {e}")
             raise
     
-    def chat(self, messages: List[Dict[str, str]], **kwargs) -> LLMResponse:
+    def chat(self, messages: List[Dict[str, Any]], **kwargs) -> LLMResponse:
         """Generate a response from a conversation.
         
         For VL models, messages can include image content:
@@ -224,7 +229,7 @@ class LocalLLMProvider(LLMProvider):
                 tokens_prompt=tokens_prompt,
                 tokens_completion=tokens_completion,
                 finish_reason=finish_reason,
-                metadata={"elapsed_seconds": elapsed}
+                metadata={"elapsed_seconds": elapsed, "vl_model": self._is_vl_model}
             )
             
         except Exception as e:
@@ -244,6 +249,10 @@ class LocalLLMProvider(LLMProvider):
             "model_exists": self._model_path.exists() if self._model_path else False,
             "cuda_available": False,
             "gpu_info": None,
+            "vision_capable": self._is_vl_model,
+            "vision_capability": self.config.vision_capability.value if self._is_vl_model else "none",
+            "mmproj_path": str(self._mmproj_path) if self._mmproj_path else None,
+            "mmproj_exists": self._mmproj_path.exists() if self._mmproj_path else False,
         }
         
         # Check CUDA availability via nvidia-smi
@@ -296,6 +305,8 @@ class LocalLLMProvider(LLMProvider):
             "model_path": str(self._model_path),
             "mmproj_path": str(self._mmproj_path) if self._mmproj_path else None,
             "is_vl_model": self._is_vl_model,
+            "vision_capability": self.config.vision_capability.value,
+            "max_images": self.config.max_images,
             "context_length": self.config.context_length,
             "gpu_layers": self.config.n_gpu_layers,
             "status": "loaded",
