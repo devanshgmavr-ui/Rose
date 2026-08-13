@@ -83,12 +83,17 @@ class WebServer:
         self._routes["POST /api/v1/confirmations/{id}/respond"] = self._handle_respond_confirmation
         self._routes["GET /api/v1/confirmations"] = self._handle_pending_confirmations
         self._routes["GET /api/v1/events"] = self._handle_get_events
+        self._routes["GET /api/v1/capabilities"] = self._handle_get_capabilities
+        self._routes["GET /api/v1/permissions"] = self._handle_get_permissions
+        self._routes["GET /api/v1/system"] = self._handle_get_system_status
 
     def handle_request(
         self, method: str, path: str, body: Optional[Dict] = None,
         headers: Optional[Dict] = None,
     ) -> Dict[str, Any]:
         """Handle an HTTP request."""
+        self._last_path = path
+
         for mw in self._middleware:
             try:
                 result = mw(method, path, body)
@@ -251,6 +256,21 @@ class WebServer:
             return {"status": 200, "data": events}
         return {"status": 200, "data": []}
 
+    def _handle_get_capabilities(self, body: Dict, headers: Dict) -> Dict:
+        if self._app:
+            return {"status": 200, "data": self._app.get_capabilities()}
+        return {"status": 200, "data": {"capabilities": [], "tools": []}}
+
+    def _handle_get_permissions(self, body: Dict, headers: Dict) -> Dict:
+        if self._app:
+            return {"status": 200, "data": self._app.get_permissions()}
+        return {"status": 200, "data": {"permissions": [], "enabled": {}}}
+
+    def _handle_get_system_status(self, body: Dict, headers: Dict) -> Dict:
+        if self._app:
+            return {"status": 200, "data": self._app.get_system_status()}
+        return {"status": 200, "data": {"status": "no_service"}}
+
     def _matches_pattern(self, pattern: str, route: str) -> bool:
         p_parts = pattern.split("/")
         r_parts = route.split("/")
@@ -264,6 +284,14 @@ class WebServer:
         return True
 
     def _extract_id_from_path(self, pattern: str) -> str:
+        """Extract the {id} segment from the actual request path using the pattern."""
+        p_parts = pattern.split("/")
+        r_parts = self._last_path.split("/") if hasattr(self, '_last_path') else []
+        if len(p_parts) != len(r_parts):
+            return ""
+        for p, r in zip(p_parts, r_parts):
+            if p.startswith("{") and p.endswith("}"):
+                return r
         return ""
 
     def start(self):

@@ -483,3 +483,59 @@ class ApplicationService:
             "sessions": len(self._sessions),
             "tools": len(self.get_tools()),
         }
+
+    def get_capabilities(self) -> Dict[str, Any]:
+        """Get available capabilities and tool catalog."""
+        from ..orchestration.tool_catalog import build_tool_catalog
+        from ..orchestration.capability_analyzer import CAPABILITY_DEFINITIONS
+
+        catalog = build_tool_catalog()
+        return {
+            "capabilities": list(CAPABILITY_DEFINITIONS.keys()),
+            "tools": {name: meta.to_dict() for name, meta in catalog.items()},
+            "tool_count": len(catalog),
+        }
+
+    def get_permissions(self) -> Dict[str, Any]:
+        """Get current permission status."""
+        if self._agent and self._agent._permission_manager:
+            pm = self._agent._permission_manager
+            return {
+                "permissions": [
+                    {"name": p.name if hasattr(p, 'name') else str(p),
+                     "status": p.value if hasattr(p, 'value') else str(p)}
+                    for p in (pm._permissions.values() if hasattr(pm, '_permissions') else [])
+                ],
+                "enabled": {
+                    "vision": self._agent.config.vision_enabled if self._agent.config else False,
+                    "os_control": self._agent.config.os_control_enabled if self._agent.config else False,
+                    "browser": self._agent.config.browser_automation_enabled if self._agent.config else False,
+                    "mouse": self._agent.config.mouse_control_enabled if self._agent.config else False,
+                    "keyboard": self._agent.config.keyboard_control_enabled if self._agent.config else False,
+                },
+            }
+        return {"permissions": [], "enabled": {}}
+
+    def get_system_status(self) -> Dict[str, Any]:
+        """Get comprehensive system status."""
+        status = {
+            "initialized": self._initialized,
+            "timestamp": time.time(),
+            "sessions": len(self._sessions),
+            "pending_tasks": len(self._pending_tasks),
+            "pending_confirmations": len([
+                r for r in self._confirmation_requests.values() if not r.responded
+            ]),
+        }
+
+        if self._agent:
+            status["agent"] = self._agent.health_check()
+            status["tools"] = {
+                "count": self._agent._tool_registry.count() if self._agent._tool_registry else 0,
+                "available": self._agent._tool_registry.list_names() if self._agent._tool_registry else [],
+            }
+            status["media"] = self._agent.get_media_stats()
+            status["orchestration"] = self._agent.get_orchestration_stats()
+            status["memory"] = self._agent.get_memory_stats()
+
+        return status
