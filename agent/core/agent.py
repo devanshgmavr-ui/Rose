@@ -48,6 +48,7 @@ from ..media import (
     MediaRouter,
     VisionProvider,
     LocalVisionProvider,
+    RealVisionProvider,
     VisionAnalyzer,
     VisionAnalyzeTool,
     VisualGrounder,
@@ -247,14 +248,23 @@ class Agent:
         self._media_storage = MediaStorage(workspace_dir="workspace")
         self._media_router = MediaRouter(storage=self._media_storage)
         
-        self._vision_provider = LocalVisionProvider(
-            model_path=self.config.vision_model_path if self.config.vision_model_path else None,
-            max_image_size_mb=self.config.vision_max_image_size_mb,
-            max_image_width=self.config.vision_max_image_width,
-            max_image_height=self.config.vision_max_image_height,
-            max_elements=self.config.vision_max_elements,
-            analysis_timeout=self.config.vision_analysis_timeout / 1000.0,
-        )
+        # Select vision provider based on config
+        if self.config.vision_provider_type == "real":
+            logger.info("Using RealVisionProvider with image preprocessing")
+            self._vision_provider = RealVisionProvider(
+                max_image_size_mb=self.config.vision_max_image_size_mb,
+                max_image_width=self.config.vision_max_image_width,
+                max_image_height=self.config.vision_max_image_height,
+            )
+        else:
+            self._vision_provider = LocalVisionProvider(
+                model_path=self.config.vision_model_path if self.config.vision_model_path else None,
+                max_image_size_mb=self.config.vision_max_image_size_mb,
+                max_image_width=self.config.vision_max_image_width,
+                max_image_height=self.config.vision_max_image_height,
+                max_elements=self.config.vision_max_elements,
+                analysis_timeout=self.config.vision_analysis_timeout / 1000.0,
+            )
         self._vision_provider.initialize()
         
         self._vision_analyzer = VisionAnalyzer(

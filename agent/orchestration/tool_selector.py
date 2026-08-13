@@ -213,7 +213,9 @@ class IntentClassifier:
                 r"what('s|\s+is)\s*in\s*(this|the)\s*(image|screenshot|picture)",
                 r"describe\s*(this|the)\s*(image|screenshot|picture)",
                 r"understand\s*(this|the)\s*(image|screenshot)",
-                r"look\s*at\s*(this|the)\s*(image|screenshot)",
+                r"look\s*at\s*(this|the)\s*(image|screenshot|picture|photo)",
+                r"read\s*(this|the)\s*(image|screenshot|picture)",
+                r"interpret\s*(this|the)\s*(image|screenshot)",
             ],
             "tool": "vision_analyze",
             "action": "analyze",
@@ -221,7 +223,7 @@ class IntentClassifier:
         },
         "visual_ground": {
             "patterns": [
-                r"find\s*(the\s*)?(button|link|element|icon)",
+                r"find\s*(the\s*)?\w*\s*(button|link|element|icon)",
                 r"locate\s*(the\s*)?(button|link|element|icon)",
                 r"where\s*is\s*(the\s*)?(button|link|element)",
                 r"coordinates\s*of",

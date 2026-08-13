@@ -191,7 +191,7 @@ class Config:
         
         # Vision settings
         self.vision_enabled = False
-        self.vision_provider_type = "local"
+        self.vision_provider_type = "local"  # "local" = stub, "real" = RealVisionProvider with preprocessing
         self.vision_model_path = ""
         self.vision_max_image_size_mb = 20
         self.vision_max_image_width = 4096

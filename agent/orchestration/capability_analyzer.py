@@ -129,16 +129,18 @@ CAPABILITY_DEFINITIONS: Dict[str, Dict[str, Any]] = {
     "vision_analysis": {
         "description": "Analyze images to understand content",
         "keywords": [
-            "analyze image", "what's in", "describe image",
-            "look at", "understand image", "visual",
-            "interpret image", "read image",
+            "analyze", "what's in", "describe",
+            "look at", "understand", "interpret", "read",
+            "visual", "ocr", "extract text",
+            "screenshot analysis", "picture content",
         ],
     },
     "visual_grounding": {
         "description": "Find UI elements in images by coordinates",
         "keywords": [
-            "find button", "locate", "coordinates", "where is",
-            "find element", "click on element",
+            "find button", "find element", "locate",
+            "coordinates", "where is",
+            "click on element", "ui element",
         ],
     },
     "app_launch": {

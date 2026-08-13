@@ -400,15 +400,19 @@ def get_tools_for_request(
     keyword_map = {
         "filesystem": ["file", "read", "write", "save", "create", "list", "directory", "folder", "copy", "move", "delete", "rename", "search"],
         "python_sandbox": ["code", "python", "execute", "script", "program", "calculate", "compute"],
-        "screen_capture": ["screenshot", "screen", "capture", "photo", "picture", "image of screen"],
-        "system_info": ["system", "info", "cpu", "memory", "disk", "os", "hardware"],
-        "mouse": ["click", "mouse", "cursor", "pointer", "move mouse", "scroll"],
-        "keyboard": ["type", "keyboard", "press", "key", "hotkey", "shortcut", "text input"],
-        "window": ["window", "minimize", "maximize", "restore", "activate", "focus", "close window"],
-        "browser": ["browser", "chrome", "firefox", "edge", "navigate", "website", "web page", "url", "search online", "browse"],
-        "vision_analyze": ["analyze image", "what's in", "describe image", "look at", "understand image", "visual"],
-        "visual_ground": ["find button", "locate", "coordinates", "where is", "find element", "click on"],
-        "image_analyze": ["image", "picture", "photo", "analyze picture"],
+        "screen_capture": ["screenshot", "take screenshot", "capture screen", "screen capture"],
+        "system_info": ["system info", "computer info", "hardware", "cpu", "memory", "ram", "disk"],
+        "mouse": ["click", "mouse", "cursor", "pointer", "scroll"],
+        "keyboard": ["type", "keyboard", "press key", "hotkey", "shortcut"],
+        "window": ["window", "minimize", "maximize", "restore", "activate window", "close window"],
+        "browser": ["browser", "chrome", "firefox", "edge", "navigate", "website", "web page", "browse"],
+        "vision_analyze": ["analyze", "what's in", "describe", "look at", "understand", "visual",
+                           "interpret", "ocr", "extract text", "transcribe",
+                           "image content", "picture content", "photo analysis", "screenshot analysis",
+                           "screenshot", "identify objects", "detect colors", "color analysis", "image metadata"],
+        "visual_ground": ["find", "locate", "coordinates", "where is",
+                          "ui element", "button position", "icon location"],
+        "image_analyze": ["analyze picture", "analyze photo"],
     }
 
     for tool_name, keywords in keyword_map.items():
