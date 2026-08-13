@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌹 Rose
+#  Rose
 
 ### Fully Local Autonomous AI Agent
 
