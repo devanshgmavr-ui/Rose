@@ -137,6 +137,13 @@ class VisionPipeline:
                 )
         
         try:
+            # Convert string mode to enum if needed
+            if isinstance(mode, str):
+                try:
+                    mode = VisionMode(mode)
+                except ValueError:
+                    mode = VisionMode.CLASSICAL
+            
             if mode == VisionMode.VL_NATIVE:
                 result = self._vl_analyze(screenshot_path, query, system_prompt)
             elif mode == VisionMode.CLASSICAL:

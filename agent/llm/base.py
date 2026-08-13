@@ -73,8 +73,31 @@ class ImageInput:
                    description=description)
     
     def to_llm_format(self) -> Dict[str, Any]:
-        """Convert to OpenAI-compatible image_url format for chat completion."""
-        return {"type": "image_url", "image_url": {"url": self.source}}
+        """Convert to OpenAI-compatible image_url format for chat completion.
+        
+        For local file paths, converts to base64 data URI to ensure
+        compatibility with llama-cpp-python's Llava16ChatHandler.
+        """
+        import base64
+        from pathlib import Path
+        
+        source = self.source
+        
+        # If already a data URI or HTTP URL, use as-is
+        if source.startswith("data:") or source.startswith("http://") or source.startswith("https://"):
+            return {"type": "image_url", "image_url": {"url": source}}
+        
+        # Convert local file path to base64 data URI
+        file_path = Path(source)
+        if file_path.exists() and file_path.is_file():
+            with open(file_path, "rb") as f:
+                image_data = f.read()
+            b64_data = base64.b64encode(image_data).decode("utf-8")
+            data_uri = f"data:{self.media_type};base64,{b64_data}"
+            return {"type": "image_url", "image_url": {"url": data_uri}}
+        
+        # Fallback: try as URL (may fail, but let the caller handle it)
+        return {"type": "image_url", "image_url": {"url": source}}
 
 
 @dataclass
