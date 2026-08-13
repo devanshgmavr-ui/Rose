@@ -41,6 +41,14 @@ from .observe_act_verify import ObserveActVerifyLoop, LoopConfig, LoopResult, Lo
 from .oav_tool import ObserveActVerifyTool
 from .image_gen import ImageGenProvider, StubLocalImageGenProvider
 from .video_gen import VideoGenProvider, StubLocalVideoGenProvider
+from .real_vision import (
+    RealVisionProvider,
+    ImagePreprocessor,
+    ImageMetadata,
+    ColorInfo,
+    ImageAnalysis,
+    ImageFormat,
+)
 
 __all__ = [
     "MediaType",
@@ -80,6 +88,12 @@ __all__ = [
     "StubLocalImageGenProvider",
     "VideoGenProvider",
     "StubLocalVideoGenProvider",
+    "RealVisionProvider",
+    "ImagePreprocessor",
+    "ImageMetadata",
+    "ColorInfo",
+    "ImageAnalysis",
+    "ImageFormat",
     "MEDIA_TYPE_EXTENSIONS",
     "MEDIA_MIME_TYPES",
 ]
