@@ -104,14 +104,31 @@ def cmd_run(args):
 
 def _run_interactive(agent):
     """Run in interactive CLI mode."""
-    print("Starting Rose in interactive mode...")
-    print("Type 'help' for commands, 'quit' to exit.\n")
+    print("Starting Rose in interactive mode...\n")
 
     if not agent.initialize():
         print("Failed to initialize agent. Check logs for details.")
         return 1
 
-    print("Rose is ready!\n")
+    # Show system status
+    health = agent.health_check()
+    llm_status = health.get("llm", {})
+    vision_status = health.get("vision", {})
+    tools_status = health.get("tools", {})
+    memory_status = health.get("memory", {})
+    model_health = health.get("model_health", {})
+    
+    print("=" * 50)
+    print("ROSE — LOCAL AUTONOMOUS AI")
+    print("=" * 50)
+    print(f"Model: {model_health.get('model_name', 'unknown')}")
+    print(f"Vision: {'READY' if llm_status.get('vision_capable') else 'NOT AVAILABLE'}")
+    print(f"GPU: {'READY' if llm_status.get('cuda_available') else 'CPU MODE'}")
+    print(f"Memory: {'READY' if memory_status.get('initialized') else 'NOT AVAILABLE'}")
+    print(f"Tools: {tools_status.get('count', 0)} registered")
+    print("=" * 50)
+    print()
+    print("Rose is ready. Type 'help' for commands, 'quit' to exit.\n")
 
     try:
         while True:
