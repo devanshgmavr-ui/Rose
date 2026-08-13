@@ -6,7 +6,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-1954%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-2005%20passing-brightgreen.svg)](#testing)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078d4.svg)](https://www.microsoft.com/windows)
 [![GPU](https://img.shields.io/badge/GPU-CUDA-76b900.svg)](https://developer.nvidia.com/cuda-zone)
 
@@ -520,11 +520,20 @@ Solutions:
 
 ## Testing
 
-**1954 unit tests** — all passing
+**2005 unit tests** — all passing
 
 ```powershell
 # Run all tests
 python -m pytest tests/unit/ -v
+
+# Run backend smoke test (18 checks)
+python scripts/rose_smoke_test.py
+
+# Run end-to-end tests (12 scenarios)
+python scripts/rose_e2e_tests.py
+
+# Run performance validation
+python scripts/rose_perf_test.py
 
 # Run VL pipeline tests
 python -m pytest tests/unit/test_vl_pipeline.py -v
@@ -580,7 +589,8 @@ python -m pytest tests/unit/ --cov=agent
 | Multimodal Messages | 55 | Full |
 | Vision→LLM Integration | 6 | Full |
 | VL Pipeline (Phase 17) | 76 | Full |
-| **Total** | **1954** | **Full** |
+| Production Hardening | 17 | Full |
+| **Total** | **2005** | **Full** |
 
 ---
 
