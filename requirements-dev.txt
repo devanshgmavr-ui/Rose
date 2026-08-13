@@ -1,0 +1,23 @@
+# Rose - Development Dependencies
+# For development, testing, and building
+# Install with: pip install -r requirements-dev.txt
+
+# Include runtime dependencies
+-r requirements-runtime.txt
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-asyncio>=0.21.0
+
+# Optional: UI (PySide6)
+# Uncomment if building with UI support
+# PySide6>=6.5.0
+
+# Optional: Browser automation
+# Uncomment if building with browser support
+# playwright>=1.40.0
+
+# Optional: Vision/OpenCV
+# Uncomment if building with vision support
+# opencv-python>=4.8.0

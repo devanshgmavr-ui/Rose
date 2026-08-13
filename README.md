@@ -37,6 +37,25 @@ cd Rose
 install.bat
 ```
 
+The installer automatically detects your system and selects the appropriate configuration:
+- NVIDIA GPU with CUDA → GPU-accelerated mode
+- No GPU → CPU-only mode
+- Python 3.10-3.12 → Prebuilt wheels (no compiler needed)
+- Python 3.13+ → May require Visual Studio Build Tools
+
+### Python Installer (Advanced)
+
+```powershell
+git clone https://github.com/devanshgmavr-ui/Rose.git
+cd Rose
+python install_rose.py --install-type full
+```
+
+Options:
+- `--cpu-only`: Force CPU mode even if GPU detected
+- `--check-only`: Only show system info, don't install
+- `--install-type core|ui|full|dev`: Select feature set
+
 ### Manual Install
 
 ```powershell
@@ -48,8 +67,11 @@ cd Rose
 python -m venv venv
 .\venv\Scripts\Activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install with prebuilt wheels (recommended)
+pip install -r requirements-runtime.txt --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+
+# Or for CUDA 12.x:
+# pip install -r requirements-runtime.txt --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu121
 
 # Place your model
 # models/qwen2.5-coder-7b-instruct-q4_k_m.gguf
@@ -325,6 +347,51 @@ See `.env.example` for all options.
 | Browser | Off | Isolated from user profiles |
 | Vision | Off | Requires explicit opt-in |
 | Window Mutations | Confirmation | Requires approval |
+
+---
+
+## Deployment
+
+### System Requirements
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **OS** | Windows 10 | Windows 11 |
+| **Python** | 3.10 | 3.10-3.12 |
+| **CPU** | 4 cores | 8+ cores |
+| **RAM** | 8 GB | 16 GB |
+| **GPU** | None (CPU mode) | NVIDIA 4GB+ VRAM |
+| **Storage** | 5 GB free | 10 GB SSD |
+
+### Installation Strategies
+
+Rose uses prebuilt wheels to avoid requiring compilation tools:
+
+| Mode | Wheel Index | Requirements |
+|------|-------------|--------------|
+| **CPU** | `whl/cpu` | Python 3.10-3.12 |
+| **CUDA 11.8** | `whl/cu118` | NVIDIA GPU, CUDA 11.8 |
+| **CUDA 12.1** | `whl/cu121` | NVIDIA GPU, CUDA 12.1+ |
+| **CUDA 12.4** | `whl/cu124` | NVIDIA GPU, CUDA 12.4+ |
+| **CUDA 12.5** | `whl/cu125` | NVIDIA GPU, CUDA 12.5+ |
+| **CUDA 13.0** | `whl/cu130` | NVIDIA GPU, CUDA 13.0+ |
+
+### Troubleshooting Installation
+
+**Problem: `CMAKE_C_COMPILER not set`**
+
+This means the installer tried to compile llama-cpp-python from source.
+Solution: Use Python 3.10-3.12 with prebuilt wheels, or install Visual Studio Build Tools.
+
+**Problem: `Could not find a version that satisfies requirement`**
+
+This means no prebuilt wheel exists for your Python version.
+Solution: Use Python 3.10, 3.11, or 3.12.
+
+**Problem: `No module named 'playwright'`**
+
+Browser automation is optional.
+Solution: `pip install playwright && python -m playwright install chromium`
 
 ---
 

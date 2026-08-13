@@ -1,0 +1,48 @@
+# Rose - Runtime Dependencies
+# Production-only packages for end users
+# Install with: pip install -r requirements-runtime.txt
+
+# Core LLM runtime
+# Prebuilt wheels available at: https://abetlen.github.io/llama-cpp-python/whl/
+# For CPU-only: use --extra-index-url .../whl/cpu
+# For CUDA: use --extra-index-url .../whl/cu121 (or cu124, cu125, etc.)
+llama-cpp-python>=0.3.0
+
+# Image processing (prebuilt wheel)
+Pillow>=10.0.0
+
+# Numerical computing (prebuilt wheel)
+numpy>=1.24.0
+
+# Configuration and environment
+python-dotenv>=1.0.0
+
+# YAML configuration
+PyYAML>=6.0
+
+# Progress bars
+tqdm>=4.65.0
+
+# Rich text formatting
+rich>=13.0.0
+
+# Pydantic for data validation
+pydantic>=2.0.0
+
+# Type checking
+typing-extensions>=4.5.0
+
+# Caching
+diskcache>=5.6.0
+
+# Templating
+Jinja2>=3.1.0
+
+# Markdown parsing
+markdown-it-py>=3.0.0
+
+# Packaging utilities
+packaging>=23.0
+
+# Path handling
+pathspec>=0.11.0
