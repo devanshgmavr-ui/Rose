@@ -2,6 +2,7 @@
 
 Stage 4.1 - Natural Language Tool Planning.
 Phase 9 - Autonomous Tool Selection & Prompt Execution.
+Phase 13 - Observation, Verification & Failure Recovery.
 """
 
 from .models import (
@@ -33,6 +34,16 @@ from .task_state import (
     StepExecution, ExecutionTrace,
 )
 from .autonomous_loop import AutonomousLoop
+
+# Phase 13 imports
+from .observation import (
+    ObservationSystem, Observation, ObservationResult, ObservationRule,
+    ObservationType, ObservationStatus,
+)
+from .recovery import (
+    FailureRecovery, RecoveryDecision, FailureContext,
+    ErrorCategory, RecoveryStrategy, TOOL_FALLBACKS,
+)
 
 __all__ = [
     # Existing
@@ -75,4 +86,17 @@ __all__ = [
     "StepExecution",
     "ExecutionTrace",
     "AutonomousLoop",
+    # Phase 13
+    "ObservationSystem",
+    "Observation",
+    "ObservationResult",
+    "ObservationRule",
+    "ObservationType",
+    "ObservationStatus",
+    "FailureRecovery",
+    "RecoveryDecision",
+    "FailureContext",
+    "ErrorCategory",
+    "RecoveryStrategy",
+    "TOOL_FALLBACKS",
 ]
