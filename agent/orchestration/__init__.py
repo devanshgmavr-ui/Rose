@@ -1,6 +1,7 @@
 """Orchestration system for task planning and execution.
 
 Stage 4.1 - Natural Language Tool Planning.
+Phase 9 - Autonomous Tool Selection & Prompt Execution.
 """
 
 from .models import (
@@ -24,7 +25,17 @@ from .verifier import Verifier
 from .persistence import TaskPersistence
 from .autonomous import AutonomousTaskManager, TaskProgress, TaskResult
 
+# Phase 9 imports
+from .capability_analyzer import CapabilityAnalyzer, Capability, CapabilityAnalysis
+from .tool_scorer import ToolScorer, ToolScore, SelectionResult
+from .task_state import (
+    AutonomousTaskState, TaskPhase, TaskConstraints,
+    StepExecution, ExecutionTrace,
+)
+from .autonomous_loop import AutonomousLoop
+
 __all__ = [
+    # Existing
     "TaskStatus",
     "StepStatus",
     "Decision",
@@ -51,4 +62,17 @@ __all__ = [
     "AutonomousTaskManager",
     "TaskProgress",
     "TaskResult",
+    # Phase 9
+    "CapabilityAnalyzer",
+    "Capability",
+    "CapabilityAnalysis",
+    "ToolScorer",
+    "ToolScore",
+    "SelectionResult",
+    "AutonomousTaskState",
+    "TaskPhase",
+    "TaskConstraints",
+    "StepExecution",
+    "ExecutionTrace",
+    "AutonomousLoop",
 ]
