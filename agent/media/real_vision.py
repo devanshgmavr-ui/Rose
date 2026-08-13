@@ -30,6 +30,7 @@ from .vision import (
     BoundingBox,
     VisionConfidence,
 )
+from .ocr import OCRProvider, OCRResult, OCRStatus, StubOCRProvider
 
 logger = logging.getLogger(__name__)
 
@@ -489,6 +490,7 @@ class RealVisionProvider(VisionProvider):
         model_path: Optional[str] = None,
         use_ocr: bool = True,
         use_multimodal: bool = True,
+        ocr_provider: Optional[OCRProvider] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -498,6 +500,7 @@ class RealVisionProvider(VisionProvider):
         self._ocr_available = False
         self._multimodal_available = False
         self._preprocessor = ImagePreprocessor()
+        self._ocr_provider = ocr_provider or StubOCRProvider()
 
     @property
     def name(self) -> str:
@@ -515,13 +518,13 @@ class RealVisionProvider(VisionProvider):
         """Initialize vision provider and check capabilities."""
         self._initialized = True
 
-        # Check OCR availability
-        try:
-            import pytesseract
-            self._ocr_available = True
-            logger.info("OCR available via pytesseract")
-        except ImportError:
-            logger.info("OCR not available (pytesseract not installed)")
+        # Initialize OCR provider
+        if self._use_ocr:
+            if hasattr(self._ocr_provider, 'initialize'):
+                self._ocr_available = self._ocr_provider.initialize()
+            else:
+                self._ocr_available = self._ocr_provider.is_available
+        logger.info(f"OCR provider: {self._ocr_provider.name} (available={self._ocr_available})")
 
         # Check multimodal model availability
         if self._model_path and os.path.exists(self._model_path):
@@ -567,32 +570,15 @@ class RealVisionProvider(VisionProvider):
         # Detect regions
         regions = self._preprocessor.detect_basic_regions(img)
 
-        # OCR if available
+        # OCR via abstraction
+        ocr_result = None
         detected_text = ""
         ocr_confidence = 0.0
         if self._ocr_available and self._use_ocr:
-            try:
-                import pytesseract
-                # Get OCR with confidence
-                ocr_data = pytesseract.image_to_data(
-                    img, output_type=pytesseract.Output.DICT
-                )
-                texts = []
-                confidences = []
-                for i, text in enumerate(ocr_data["text"]):
-                    if text.strip():
-                        texts.append(text)
-                        conf = ocr_data["conf"][i]
-                        if isinstance(conf, (int, float)) and conf > 0:
-                            confidences.append(conf)
-
-                detected_text = " ".join(texts)
-                ocr_confidence = (
-                    sum(confidences) / len(confidences) / 100.0
-                    if confidences else 0.0
-                )
-            except Exception as e:
-                logger.debug(f"OCR failed: {e}")
+            ocr_result = self._ocr_provider.extract_text(file_path)
+            if ocr_result and ocr_result.status in (OCRStatus.SUCCESS, OCRStatus.PARTIAL):
+                detected_text = ocr_result.text
+                ocr_confidence = ocr_result.confidence
 
         # Build detected elements from regions
         detected_elements = []
@@ -623,13 +609,27 @@ class RealVisionProvider(VisionProvider):
                 },
             ))
 
-        # Add text element if detected
-        if detected_text:
+        # Add OCR text blocks as detected elements
+        if ocr_result and ocr_result.blocks:
+            for block in ocr_result.blocks[:self._max_elements]:
+                detected_elements.insert(0, DetectedElement(
+                    element_type="text",
+                    description=f"OCR text: {block.text[:200]}",
+                    bounding_box=BoundingBox(
+                        x=block.x,
+                        y=block.y,
+                        width=block.width,
+                        height=block.height,
+                    ),
+                    confidence=VisionConfidence.HIGH if block.confidence > 0.7 else VisionConfidence.MEDIUM,
+                    metadata={"ocr_confidence": block.confidence, "untrusted": True},
+                ))
+        elif detected_text:
             detected_elements.insert(0, DetectedElement(
                 element_type="text",
                 description=f"Detected text: {detected_text[:200]}",
                 confidence=VisionConfidence.HIGH if ocr_confidence > 0.7 else VisionConfidence.MEDIUM,
-                metadata={"ocr_confidence": ocr_confidence},
+                metadata={"ocr_confidence": ocr_confidence, "untrusted": True},
             ))
 
         # Build description
@@ -658,6 +658,24 @@ class RealVisionProvider(VisionProvider):
 
         elapsed = time.time() - start
 
+        # Build metadata with OCR info
+        result_metadata = {
+            "metadata": metadata.to_dict(),
+            "color_info": color_info.to_dict(),
+            "detected_text": detected_text,
+            "ocr_confidence": ocr_confidence,
+            "region_count": len(regions),
+            "element_count": len(detected_elements),
+            "warnings": warnings,
+            "capabilities": {
+                "ocr": self._ocr_available,
+                "multimodal": self._multimodal_available,
+            },
+        }
+
+        if ocr_result:
+            result_metadata["ocr_result"] = ocr_result.to_dict()
+
         return VisionResult(
             success=True,
             description="\n".join(description_parts),
@@ -667,19 +685,7 @@ class RealVisionProvider(VisionProvider):
             analysis_prompt=request.prompt or "General image analysis",
             provider=self.name,
             execution_time=elapsed,
-            metadata={
-                "metadata": metadata.to_dict(),
-                "color_info": color_info.to_dict(),
-                "detected_text": detected_text,
-                "ocr_confidence": ocr_confidence,
-                "region_count": len(regions),
-                "element_count": len(detected_elements),
-                "warnings": warnings,
-                "capabilities": {
-                    "ocr": self._ocr_available,
-                    "multimodal": self._multimodal_available,
-                },
-            },
+            metadata=result_metadata,
         )
 
     def get_capabilities(self) -> Dict[str, Any]:
@@ -689,6 +695,7 @@ class RealVisionProvider(VisionProvider):
             "color_analysis": True,
             "region_detection": True,
             "ocr": self._ocr_available,
+            "ocr_provider": self._ocr_provider.name if self._ocr_available else None,
             "multimodal": self._multimodal_available,
             "preprocessing": True,
             "metadata_extraction": True,

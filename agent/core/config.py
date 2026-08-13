@@ -203,6 +203,18 @@ class Config:
         self.grounding_confidence_threshold = 0.3
         self.grounding_stale_timeout = 30.0
         
+        # OCR settings
+        self.ocr_enabled = True
+        self.ocr_provider_type = "local_tesseract"
+        self.ocr_language = "eng"
+        self.ocr_config = "--psm 6"
+        self.ocr_max_image_size_mb = 20
+        self.ocr_max_image_width = 4096
+        self.ocr_max_image_height = 4096
+        self.ocr_max_text_chars = 100000
+        self.ocr_max_blocks = 1000
+        self.ocr_timeout_ms = 30000
+        
         # Set base directory
         if config_dir:
             self.base_dir = config_dir
@@ -370,6 +382,18 @@ class Config:
         # Grounding settings
         self.grounding_confidence_threshold = float(os.getenv("GROUNDING_CONFIDENCE_THRESHOLD", str(self.grounding_confidence_threshold)))
         self.grounding_stale_timeout = float(os.getenv("GROUNDING_STALE_TIMEOUT", str(self.grounding_stale_timeout)))
+        
+        # OCR settings
+        self.ocr_enabled = os.getenv("OCR_ENABLED", "true").lower() == "true"
+        self.ocr_provider_type = os.getenv("OCR_PROVIDER", self.ocr_provider_type)
+        self.ocr_language = os.getenv("OCR_LANGUAGE", self.ocr_language)
+        self.ocr_config = os.getenv("OCR_CONFIG", self.ocr_config)
+        self.ocr_max_image_size_mb = int(os.getenv("OCR_MAX_IMAGE_SIZE_MB", str(self.ocr_max_image_size_mb)))
+        self.ocr_max_image_width = int(os.getenv("OCR_MAX_IMAGE_WIDTH", str(self.ocr_max_image_width)))
+        self.ocr_max_image_height = int(os.getenv("OCR_MAX_IMAGE_HEIGHT", str(self.ocr_max_image_height)))
+        self.ocr_max_text_chars = int(os.getenv("OCR_MAX_TEXT_CHARS", str(self.ocr_max_text_chars)))
+        self.ocr_max_blocks = int(os.getenv("OCR_MAX_BLOCKS", str(self.ocr_max_blocks)))
+        self.ocr_timeout_ms = int(os.getenv("OCR_TIMEOUT_MS", str(self.ocr_timeout_ms)))
     
     def _ensure_directories(self):
         """Ensure all required directories exist."""

@@ -1,8 +1,8 @@
 @echo off
 REM ============================================
 REM   Rose - Autonomous AI Agent Installer
-REM   Production-grade installer with
-REM   system detection and fallback strategies
+REM   Single merged installer with smart
+REM   dependency checking and GPU detection
 REM ============================================
 setlocal enabledelayedexpansion
 
@@ -105,9 +105,6 @@ if %errorlevel% equ 0 (
     echo   No CMake found.
 )
 
-REM Check available disk space (need ~5GB for model + deps)
-echo   Checking disk space...
-
 echo.
 
 REM ============================================
@@ -185,92 +182,141 @@ if not exist "venv" (
     echo   Virtual environment already exists.
 )
 
-REM ============================================
-REM STEP 5: Upgrade pip
-REM ============================================
-echo [Step 5/9] Upgrading pip...
+REM Activate venv
 call venv\Scripts\activate.bat
-python -m pip upgrade pip --quiet 2>nul
-if %errorlevel% neq 0 (
-    echo   WARNING: pip upgrade failed, continuing with existing version.
-)
 
 REM ============================================
-REM STEP 6: Install Core Dependencies
+REM STEP 5: Check Installed Packages
 REM ============================================
-echo [Step 6/9] Installing core dependencies...
-echo   Using wheel index: %WHEEL_INDEX%
+echo [Step 5/9] Checking installed packages...
+
+REM Use PowerShell to get installed packages as JSON
+set "INSTALLED_FILE=%TEMP%\rose_installed.json"
+python -m pip list --format=json > "%INSTALLED_FILE%" 2>nul
+
+REM Check each critical package
+set "MISSING_PACKAGES="
+
+REM Check llama-cpp-python
+python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; sys.exit(0 if 'llama-cpp-python' in pkgs else 1)" 2>nul
+if %errorlevel% neq 0 (
+    set "MISSING_PACKAGES=!MISSING_PACKAGES! llama-cpp-python"
+    echo   llama-cpp-python: MISSING
+) else (
+    echo   llama-cpp-python: installed
+)
+
+REM Check Pillow
+python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; sys.exit(0 if 'pillow' in pkgs else 1)" 2>nul
+if %errorlevel% neq 0 (
+    set "MISSING_PACKAGES=!MISSING_PACKAGES! Pillow"
+    echo   Pillow: MISSING
+) else (
+    echo   Pillow: installed
+)
+
+REM Check numpy
+python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; sys.exit(0 if 'numpy' in pkgs else 1)" 2>nul
+if %errorlevel% neq 0 (
+    set "MISSING_PACKAGES=!MISSING_PACKAGES! numpy"
+    echo   numpy: MISSING
+) else (
+    echo   numpy: installed
+)
+
+REM Check pydantic
+python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; sys.exit(0 if 'pydantic' in pkgs else 1)" 2>nul
+if %errorlevel% neq 0 (
+    set "MISSING_PACKAGES=!MISSING_PACKAGES! pydantic"
+    echo   pydantic: MISSING
+) else (
+    echo   pydantic: installed
+)
+
+REM Check PyYAML
+python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; sys.exit(0 if 'pyyaml' in pkgs else 1)" 2>nul
+if %errorlevel% neq 0 (
+    set "MISSING_PACKAGES=!MISSING_PACKAGES! PyYAML"
+    echo   PyYAML: MISSING
+) else (
+    echo   PyYAML: installed
+)
+
+REM Check rich
+python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; sys.exit(0 if 'rich' in pkgs else 1)" 2>nul
+if %errorlevel% neq 0 (
+    set "MISSING_PACKAGES=!MISSING_PACKAGES! rich"
+    echo   rich: MISSING
+) else (
+    echo   rich: installed
+)
+
 echo.
 
-REM Try prebuilt wheel first
-pip install llama-cpp-python>=0.3.0 ^
-    --extra-index-url %WHEEL_INDEX% ^
-    --only-binary=llama-cpp-python ^
-    --quiet 2>nul
+REM ============================================
+REM STEP 6: Install Missing Dependencies
+REM ============================================
+echo [Step 6/9] Installing missing dependencies...
 
+REM Always try to upgrade pip first
+python -m pip install upgrade pip --quiet 2>nul
+
+REM Install llama-cpp-python only if missing
+python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; sys.exit(0 if 'llama-cpp-python' in pkgs else 1)" 2>nul
 if %errorlevel% neq 0 (
-    echo   Prebuilt wheel not available for this configuration.
-    echo   Attempting source compilation...
-    echo.
+    echo   Installing llama-cpp-python (wheel: %WHEEL_INDEX%...
 
-    REM Check if compiler is available
-    if %HAS_COMPILER% equ 0 (
-        echo   ERROR: No compiler found for source compilation.
-        echo.
-        echo   Options:
-        echo   1. Install Visual Studio Build Tools:
-        echo      https://visualstudio.microsoft.com/visual-cpp-build-tools/
-        echo.
-        echo   2. Use Python 3.10, 3.11, or 3.12 with prebuilt wheels.
-        echo.
-        echo   3. Install w64devkit and set CMAKE_ARGS:
-        echo      $env:CMAKE_GENERATOR = "MinGW Makefiles"
-        echo      $env:CMAKE_ARGS = "-DCMAKE_C_COMPILER=C:/w64devkit/bin/gcc.exe"
-        echo.
-        pause
-        exit /b 1
-    )
+    pip install llama-cpp-python>=0.3.0 ^
+        --extra-index-url %WHEEL_INDEX% ^
+        --only-binary=llama-cpp-python ^
+        --quiet 2>nul
 
-    REM Try source compilation with compiler
-    pip install llama-cpp-python>=0.3.0 --quiet
     if %errorlevel% neq 0 (
-        echo.
-        echo   ERROR: Failed to install llama-cpp-python.
-        echo.
-        echo   The prebuilt wheel was not available and source
-        echo   compilation failed. Please check the error above.
-        echo.
-        pause
-        exit /b 1
+        echo   Prebuilt wheel not available, attempting source compilation...
+
+        if %HAS_COMPILER% equ 0 (
+            echo   ERROR: No compiler found for source compilation.
+            echo.
+            echo   Options:
+            echo   1. Install Visual Studio Build Tools
+            echo   2. Use Python 3.10, 3.11, or 3.12 with prebuilt wheels
+            echo.
+            pause
+            exit /b 1
+        )
+
+        pip install llama-cpp-python>=0.3.0 --quiet
+        if %errorlevel% neq 0 (
+            echo   ERROR: Failed to install llama-cpp-python.
+            pause
+            exit /b 1
+        )
+    )
+    echo   llama-cpp-python installed.
+) else (
+    echo   llama-cpp-python: already installed, skipping.
+)
+
+REM Install other missing core dependencies
+set "CORE_DEPS=Pillow>=10.0.0 numpy>=1.24.0 python-dotenv>=1.0.0 PyYAML>=6.0 tqdm>=4.65.0 rich>=13.0.0 pydantic>=2.0.0 typing-extensions>=4.5.0 diskcache>=5.6.0 Jinja2>=3.1.0 markdown-it-py>=3.0.0 packaging>=23.0 pathspec>=0.11.0"
+
+REM Check each and install only missing ones
+python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; missing=[p for p in sys.argv[1:] if p.split('>=')[0].split('==')[0].lower() not in pkgs]; print(' '.join(missing) if missing else 'NONE')" %CORE_DEPS% > "%TEMP%\rose_missing.txt" 2>nul
+
+set /p MISSING_CORE=<"%TEMP%\rose_missing.txt"
+if "%MISSING_CORE%"=="NONE" (
+    echo   Core dependencies: all installed.
+) else (
+    echo   Installing: %MISSING_CORE%
+    pip install %MISSING_CORE% --quiet
+    if %errorlevel% neq 0 (
+        echo   WARNING: Some core dependencies failed.
+    ) else (
+        echo   Core dependencies installed.
     )
 )
 
-echo   llama-cpp-python installed successfully.
-
-REM Install other core dependencies
-pip install ^
-    "Pillow>=10.0.0" ^
-    "numpy>=1.24.0" ^
-    "python-dotenv>=1.0.0" ^
-    "PyYAML>=6.0" ^
-    "tqdm>=4.65.0" ^
-    "rich>=13.0.0" ^
-    "pydantic>=2.0.0" ^
-    "typing-extensions>=4.5.0" ^
-    "diskcache>=5.6.0" ^
-    "Jinja2>=3.1.0" ^
-    "markdown-it-py>=3.0.0" ^
-    "packaging>=23.0" ^
-    "pathspec>=0.11.0" ^
-    --quiet
-
-if %errorlevel% neq 0 (
-    echo   ERROR: Failed to install core dependencies.
-    pause
-    exit /b 1
-)
-
-echo   Core dependencies installed.
+echo.
 
 REM ============================================
 REM STEP 7: Install Optional Features
@@ -286,28 +332,45 @@ echo.
 set /p INSTALL_TYPE="Enter choice (1-4): "
 
 if "%INSTALL_TYPE%"=="1" (
-    echo       Core only installed.
+    echo   Core only selected.
 ) else if "%INSTALL_TYPE%"=="2" (
-    echo       Installing UI support...
-    pip install "PySide6>=6.5.0" --quiet
+    python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; sys.exit(0 if 'pyside6' in pkgs else 1)" 2>nul
+    if %errorlevel% neq 0 (
+        echo   Installing PySide6...
+        pip install "PySide6>=6.5.0" --quiet
+    ) else (
+        echo   PySide6: already installed.
+    )
 ) else if "%INSTALL_TYPE%"=="3" (
-    echo       Installing full features...
-    pip install "PySide6>=6.5.0" --quiet
-    pip install "playwright>=1.40.0" --quiet
-    pip install "opencv-python>=4.8.0" --quiet
-    echo       Installing Playwright browsers...
-    python -m playwright install chromium
+    python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; sys.exit(0 if all(p in pkgs for p in ['pyside6','playwright','opencv-python']) else 1)" 2>nul
+    if %errorlevel% neq 0 (
+        echo   Installing full features...
+        pip install "PySide6>=6.5.0" --quiet
+        pip install "playwright>=1.40.0" --quiet
+        pip install "opencv-python>=4.8.0" --quiet
+        echo   Installing Playwright browsers...
+        python -m playwright install chromium
+    ) else (
+        echo   Full features: already installed.
+    )
 ) else if "%INSTALL_TYPE%"=="4" (
-    echo       Installing development tools...
-    pip install "PySide6>=6.5.0" --quiet
-    pip install "playwright>=1.40.0" --quiet
-    pip install "opencv-python>=4.8.0" --quiet
-    pip install pytest pytest-cov pytest-asyncio --quiet
-    echo       Installing Playwright browsers...
-    python -m playwright install chromium
+    python -c "import json,sys; pkgs={p['name'].lower():p['version'] for p in json.load(open(r'%INSTALLED_FILE%'))}; sys.exit(0 if all(p in pkgs for p in ['pyside6','playwright','opencv-python','pytest']) else 1)" 2>nul
+    if %errorlevel% neq 0 (
+        echo   Installing development tools...
+        pip install "PySide6>=6.5.0" --quiet
+        pip install "playwright>=1.40.0" --quiet
+        pip install "opencv-python>=4.8.0" --quiet
+        pip install pytest pytest-cov pytest-asyncio --quiet
+        echo   Installing Playwright browsers...
+        python -m playwright install chromium
+    ) else (
+        echo   Development tools: already installed.
+    )
 ) else (
-    echo       Invalid choice, installing core only...
+    echo   Invalid choice, core only selected.
 )
+
+echo.
 
 REM ============================================
 REM STEP 8: Create Directories
@@ -323,28 +386,38 @@ if not exist "logs" mkdir logs
 echo   Directories created.
 
 REM ============================================
-REM STEP 9: Verify Installation
+REM STEP 9: Check for Model Files
 REM ============================================
-echo [Step 9/9] Verifying installation...
+echo [Step 9/9] Checking model files...
 
-python -c "import llama_cpp; print('  llama-cpp-python: OK')" 2>nul
-if %errorlevel% neq 0 (
-    echo   ERROR: llama-cpp-python import failed.
-    pause
-    exit /b 1
+set "MODEL_FOUND=0"
+for %%f in (models\*.gguf) do (
+    set "MODEL_FOUND=1"
+    echo   Found model: %%f
 )
 
-python -c "import PIL; print('  Pillow: OK')" 2>nul
-if %errorlevel% neq 0 (
-    echo   WARNING: Pillow not available. Vision features may be limited.
-)
-
-python -c "import numpy; print('  numpy: OK')" 2>nul
-if %errorlevel% neq 0 (
-    echo   WARNING: numpy not available.
+if %MODEL_FOUND% equ 0 (
+    echo.
+    echo   No .gguf model files found in models/ directory.
+    echo.
+    echo   Please download a GGUF model (e.g., Qwen2.5-Coder-7B-Instruct)
+    echo   and place it in the models/ folder.
+    echo.
+    echo   Recommended: Qwen2.5-Coder-7B-Instruct Q4_K_M
+    echo   Download from: https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF
 )
 
 echo.
+
+REM ============================================
+REM Clean up temp files
+REM ============================================
+del "%INSTALLED_FILE%" 2>nul
+del "%TEMP%\rose_missing.txt" 2>nul
+
+REM ============================================
+REM DONE
+REM ============================================
 echo ============================================
 echo   Installation Complete!
 echo ============================================

@@ -6,7 +6,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-1774%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-1817%20passing-brightgreen.svg)](#testing)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078d4.svg)](https://www.microsoft.com/windows)
 [![GPU](https://img.shields.io/badge/GPU-CUDA-76b900.svg)](https://developer.nvidia.com/cuda-zone)
 
@@ -116,6 +116,14 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 - **Image Analysis** — Understand what's on screen
 - **Visual Grounding** — Translate vision into clickable coordinates
 - **Observe/Act/Verify** — Safe loop for visual automation
+
+### 🔍 OCR Pipeline
+- **Modular OCR Provider** — Pluggable OCR abstraction with local Tesseract backend
+- **Structured Results** — Text, confidence scores, and bounding boxes per word
+- **Image Preprocessing** — RGB normalization, resizing, grayscale, contrast enhancement
+- **Resource Limits** — Max image size, text chars, blocks, and timeout controls
+- **Security Boundaries** — OCR output treated as untrusted, never executes commands
+- **Grounding Integration** — OCR text with bounding boxes feeds into visual grounding
 
 ### 📁 File & Code
 - **File Automation** — Read, write, copy, move, search files
@@ -355,6 +363,15 @@ BROWSER_HEADLESS=true
 # Vision (disabled by default)
 VISION_ENABLED=false
 VISION_PROVIDER=local
+
+# OCR (enabled by default when vision is enabled)
+OCR_ENABLED=true
+OCR_PROVIDER=local_tesseract
+OCR_LANGUAGE=eng
+OCR_MAX_IMAGE_SIZE_MB=20
+OCR_MAX_TEXT_CHARS=100000
+OCR_MAX_BLOCKS=1000
+OCR_TIMEOUT_MS=30000
 ```
 
 See `.env.example` for all options.
@@ -419,11 +436,20 @@ Solution: `pip install playwright && python -m playwright install chromium`
 
 ## Testing
 
-**1774 unit tests** — all passing
+**1817 unit tests** — all passing
 
 ```powershell
 # Run all tests
 python -m pytest tests/unit/ -v
+
+# Run OCR tests specifically
+python -m pytest tests/unit/test_ocr.py -v
+
+# Run Vision + OCR integration tests
+python -m pytest tests/unit/test_vision_ocr_integration.py -v
+
+# Run real OCR test (requires Tesseract installed)
+python -m pytest tests/unit/test_real_ocr.py -v
 
 # Run Phase 9 tests specifically
 python -m pytest tests/unit/test_autonomous_selection.py -v
@@ -457,7 +483,8 @@ python -m pytest tests/unit/ --cov=agent
 | Phase 12 Backend API | 58 | Full |
 | Phase 13 Observ/Recovery | 55 | Full |
 | Phase 14 Memory Integration | 24 | Full |
-| **Total** | **1774** | **Full** |
+| OCR Pipeline | 62 | Full |
+| **Total** | **1817** | **Full** |
 
 ---
 

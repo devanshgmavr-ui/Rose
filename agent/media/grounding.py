@@ -318,6 +318,16 @@ class VisualGrounder:
         desc_lower = element.description.lower()
         type_lower = element.element_type.lower()
 
+        # OCR text elements - classify by content patterns
+        if "ocr text" in desc_lower or type_lower == "text":
+            if any(w in desc_lower for w in ["button", "submit", "ok", "cancel", "sign in", "log in"]):
+                return TargetType.BUTTON
+            if any(w in desc_lower for w in ["link", "click here"]):
+                return TargetType.LINK
+            if any(w in desc_lower for w in ["search", "find"]):
+                return TargetType.TEXT_FIELD
+            return TargetType.TEXT
+
         if any(w in desc_lower for w in ["button", "submit", "ok", "cancel"]):
             return TargetType.BUTTON
         if any(w in desc_lower for w in ["link", "href"]):

@@ -49,6 +49,14 @@ from .real_vision import (
     ImageAnalysis,
     ImageFormat,
 )
+from .ocr import (
+    OCRProvider,
+    LocalOCRProvider,
+    StubOCRProvider,
+    OCRResult,
+    OCRBlock,
+    OCRStatus,
+)
 
 __all__ = [
     "MediaType",
@@ -94,6 +102,12 @@ __all__ = [
     "ColorInfo",
     "ImageAnalysis",
     "ImageFormat",
+    "OCRProvider",
+    "LocalOCRProvider",
+    "StubOCRProvider",
+    "OCRResult",
+    "OCRBlock",
+    "OCRStatus",
     "MEDIA_TYPE_EXTENSIONS",
     "MEDIA_MIME_TYPES",
 ]
