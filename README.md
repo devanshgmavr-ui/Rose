@@ -6,7 +6,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-2005%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-2046%20passing-brightgreen.svg)](#testing)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078d4.svg)](https://www.microsoft.com/windows)
 [![GPU](https://img.shields.io/badge/GPU-CUDA-76b900.svg)](https://developer.nvidia.com/cuda-zone)
 
@@ -28,6 +28,19 @@ Rose: *captures screen, analyzes it, identifies running apps, responds*
 ```
 
 ## Quick Start
+
+### Windows GUI Installer (Recommended)
+
+1. Download `Rose-Setup.exe` from [Releases](https://github.com/devanshgmavr-ui/Rose/releases)
+2. Double-click the installer
+3. Accept the Terms and Conditions
+4. Choose installation location (default: `C:\Program Files\Rose\`)
+5. Click Install
+6. Wait while Rose downloads the AI model (~5.6 GB)
+7. Click Finish
+8. Launch Rose from the Desktop shortcut
+
+No Python, Git, or terminal required.
 
 ### One-Click Install (Windows)
 
@@ -520,7 +533,7 @@ Solutions:
 
 ## Testing
 
-**2005 unit tests** — all passing
+**2046 unit tests** — all passing
 
 ```powershell
 # Run all tests
@@ -636,11 +649,21 @@ Rose/
 ├── tests/                    # Test suites
 │   ├── unit/                 # 1459 unit tests
 │   └── integration/          # Integration tests
+├── installer/                # Windows GUI installer
+│   ├── rose_installer.py     # Installer GUI (tkinter)
+│   ├── rose_gui.py           # Rose app GUI entry point
+│   ├── system_check.py       # GPU/CPU/system detection
+│   ├── model_downloader.py   # Model download with progress
+│   ├── build.py              # Build script
+│   ├── rose_gui.spec         # PyInstaller spec
+│   ├── rose_setup.iss        # Inno Setup script
+│   └── resources/            # Installer icons and images
 ├── run.py                    # Main entry point
-├── install.bat               # Windows installer
+├── install.bat               # Windows terminal installer
 ├── pyproject.toml            # Package configuration
 ├── requirements-runtime.txt  # Runtime dependencies
 ├── .env.example              # Config template
+├── LICENSE                   # MIT License
 └── README.md                 # This file
 ```
 
