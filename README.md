@@ -86,9 +86,9 @@ Grab the latest release from [Releases](https://github.com/devanshgmavr-ui/Rose/
 
 | Package | Description |
 |---------|-------------|
-| `rose-full-v1.0.0.zip` | Complete installation with all dependencies |
-| `rose-core-v1.0.0.zip` | Core agent only (LLM + tools) |
-| `rose-portable-v1.0.0.zip` | Portable version (no install needed) |
+| `rose-full-v1.1.0.zip` | Complete installation with all dependencies |
+| `rose-core-v1.1.0.zip` | Core agent only (LLM + tools) |
+| `rose-portable-v1.1.0.zip` | Portable version (no install needed) |
 
 ---
 
@@ -682,10 +682,11 @@ Download pre-built packages from [GitHub Releases](https://github.com/devanshgma
 | Release | Date | Description |
 |---------|------|-------------|
 | [v1.0.0](https://github.com/devanshgmavr-ui/Rose/releases/tag/v1.0.0) | Aug 2025 | Initial release — all 8 phases complete |
+| v1.1.0 | Aug 2025 | Backend production hardening, dependency updates |
 
 ### Package Contents
 
-**`rose-full-v1.0.0.zip`** — Complete installation
+**`rose-full-v1.1.0.zip`** — Complete installation
 ```
 Rose/
 ├── agent/              # All agent modules
@@ -698,7 +699,7 @@ Rose/
 └── README.md           # Documentation
 ```
 
-**`rose-core-v1.0.0.zip`** — Core only (smaller download)
+**`rose-core-v1.1.0.zip`** — Core only (smaller download)
 ```
 Rose/
 ├── agent/core/         # Agent core

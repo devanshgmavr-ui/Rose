@@ -125,7 +125,7 @@ class WebServer:
             "status": 200,
             "data": {
                 "name": "Rose Agent API",
-                "version": "1.0.0",
+                "version": "1.1.0",
                 "endpoints": [
                     "/api/v1/health",
                     "/api/v1/info",
@@ -146,7 +146,7 @@ class WebServer:
     def _handle_info(self, body: Dict, headers: Dict) -> Dict:
         if self._app:
             return {"status": 200, "data": self._app.get_app_info()}
-        return {"status": 200, "data": {"name": "Rose", "version": "1.0.0"}}
+        return {"status": 200, "data": {"name": "Rose", "version": "1.1.0"}}
 
     def _handle_chat(self, body: Dict, headers: Dict) -> Dict:
         message = body.get("message", "")

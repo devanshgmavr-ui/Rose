@@ -326,7 +326,7 @@ class TestApplicationService:
         svc = ApplicationService()
         info = svc.get_app_info()
         assert info["name"] == "Rose"
-        assert info["version"] == "1.0.0"
+        assert info["version"] == "1.1.0"
 
     def test_thread_safety(self):
         svc = ApplicationService()

@@ -26,7 +26,7 @@ class TestPyprojectToml:
 
         assert "project" in config
         assert config["project"]["name"] == "rose-agent"
-        assert config["project"]["version"] == "1.0.0"
+        assert config["project"]["version"] == "1.1.0"
 
     def test_has_dependencies(self):
         try:
@@ -161,7 +161,7 @@ class TestVersionConsistency:
             config = tomllib.load(f)
 
         version = config["project"]["version"]
-        assert version == "1.0.0"
+        assert version == "1.1.0"
 
     def test_version_in_web_server(self):
         from agent.web.server import WebServer
@@ -173,7 +173,7 @@ class TestVersionConsistency:
         from agent.web.application import ApplicationService
         svc = ApplicationService()
         info = svc.get_app_info()
-        assert info["version"] == "1.0.0"
+        assert info["version"] == "1.1.0"
 
 
 class TestAgentModules:

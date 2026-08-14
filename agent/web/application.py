@@ -478,7 +478,7 @@ class ApplicationService:
         """Get application information."""
         return {
             "name": "Rose",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "initialized": self._initialized,
             "sessions": len(self._sessions),
             "tools": len(self.get_tools()),

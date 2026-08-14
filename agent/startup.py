@@ -255,7 +255,7 @@ class ConfigGenerator:
     DEFAULT_CONFIG = {
         "agent": {
             "name": "Rose",
-            "version": "1.0.0",
+            "version": "1.1.0",
         },
         "llm": {
             "provider": "local",

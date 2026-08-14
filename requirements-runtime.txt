@@ -6,50 +6,50 @@
 # Prebuilt wheels available at: https://abetlen.github.io/llama-cpp-python/whl/
 # For CPU-only: use --extra-index-url .../whl/cpu
 # For CUDA: use --extra-index-url .../whl/cu121 (or cu124, cu125, etc.)
-llama-cpp-python>=0.3.0
+llama-cpp-python>=0.3.34
 
 # Image processing (prebuilt wheel)
-Pillow>=10.0.0
+Pillow>=12.3.0
 
 # Numerical computing (prebuilt wheel)
-numpy>=1.24.0
+numpy>=2.5.1
 
 # Configuration and environment
-python-dotenv>=1.0.0
+python-dotenv>=1.2.2
 
 # YAML configuration
-PyYAML>=6.0
+PyYAML>=6.0.3
 
 # Progress bars
-tqdm>=4.65.0
+tqdm>=4.70.0
 
 # Rich text formatting
-rich>=13.0.0
+rich>=15.0.0
 
 # Pydantic for data validation
-pydantic>=2.0.0
+pydantic>=2.13.4
 
 # Type checking
-typing-extensions>=4.5.0
+typing-extensions>=4.16.0
 
 # Caching
-diskcache>=5.6.0
+diskcache>=5.6.3
 
 # Templating
-Jinja2>=3.1.0
+Jinja2>=3.1.6
 
 # Markdown parsing
-markdown-it-py>=3.0.0
+markdown-it-py>=4.2.0
 
 # Packaging utilities
-packaging>=23.0
+packaging>=26.2
 
 # Path handling
-pathspec>=0.11.0
+pathspec>=1.1.1
 
 # OCR (optional - requires Tesseract-OCR installed on system)
-pytesseract>=0.3.10
+pytesseract>=0.3.13
 
 # Model downloader (used by scripts/download_models.py)
-huggingface_hub>=0.20.0
-requests>=2.31.0
+huggingface-hub>=1.27.0
+requests>=2.34.2

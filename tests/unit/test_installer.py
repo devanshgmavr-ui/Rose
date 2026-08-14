@@ -326,7 +326,7 @@ class TestRequirementsFiles:
         req_path = Path(PROJECT_ROOT) / "requirements-runtime.txt"
         if req_path.exists():
             content = req_path.read_text()
-            assert "huggingface_hub" in content, "Should include huggingface_hub"
+            assert "huggingface-hub" in content or "huggingface_hub" in content, "Should include huggingface-hub"
             assert "requests" in content, "Should include requests"
 
 
