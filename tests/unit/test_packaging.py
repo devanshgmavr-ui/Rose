@@ -82,10 +82,10 @@ class TestPyprojectToml:
 
 class TestRequirements:
     def test_exists(self):
-        assert Path("requirements.txt").exists()
+        assert Path("requirements-runtime.txt").exists()
 
     def test_has_core_deps(self):
-        content = Path("requirements.txt").read_text()
+        content = Path("requirements-runtime.txt").read_text()
         assert "llama" in content.lower()
         assert "pillow" in content.lower() or "Pillow" in content
 
