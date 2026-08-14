@@ -89,5 +89,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Build artifacts
+dist/
+build/
+
 # Rose runtime state
 .rose/
