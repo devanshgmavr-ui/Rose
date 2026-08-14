@@ -6,11 +6,28 @@ import sys
 from pathlib import Path
 
 ROOT = Path(SPECPATH).parent  # installer/ is one level below project root
+VENV_SITE = ROOT / '.venv' / 'Lib' / 'site-packages'
+
+# Collect native DLLs that PyInstaller misses
+_binaries = []
+
+# llama-cpp-python native libs (CUDA + CPU) - single copy only
+_llama_bin = VENV_SITE / 'llama_cpp' / 'lib'
+if _llama_bin.exists():
+    for dll in _llama_bin.glob('*.dll'):
+        _binaries.append((str(dll), 'llama_cpp/lib'))
+
+# NVIDIA cuBLAS and CUDA runtime (required for GPU inference)
+# Skip nvrtc (~172 MB) - not needed for GGUF model loading
+for dll in (VENV_SITE / 'nvidia' / 'cublas' / 'bin').glob('*.dll'):
+    _binaries.append((str(dll), 'nvidia'))
+for dll in (VENV_SITE / 'nvidia' / 'cuda_runtime' / 'bin').glob('*.dll'):
+    _binaries.append((str(dll), 'nvidia'))
 
 a = Analysis(
     [str(ROOT / 'installer' / 'rose_gui.py')],
     pathex=[str(ROOT)],
-    binaries=[],
+    binaries=_binaries,
     datas=[
         (str(ROOT / 'agent'), 'agent'),
         (str(ROOT / 'configs'), 'configs'),

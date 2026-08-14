@@ -25,6 +25,27 @@ def log(msg: str):
     print(f"[BUILD] {msg}")
 
 
+def _clean_duplicates(rose_dir: Path):
+    """Remove duplicate/unnecessary DLLs that PyInstaller pulls in via ctypes detection."""
+    internal = rose_dir / "_internal"
+    if not internal.exists():
+        return
+
+    # Remove cublas13 from CUDA toolkit (ggml-cuda uses cublas12 from nvidia pip package)
+    for name in ["cublas64_13.dll", "cublasLt64_13.dll"]:
+        f = internal / name
+        if f.exists():
+            f.unlink()
+            log(f"Removed duplicate {name}")
+
+    # Remove duplicate nvidia/cublas/bin/ (keep nvidia/ only)
+    dup_dir = internal / "nvidia" / "cublas"
+    if dup_dir.exists():
+        import shutil
+        shutil.rmtree(dup_dir)
+        log("Removed duplicate nvidia/cublas/bin/")
+
+
 def clean():
     """Clean previous build artifacts."""
     log("Cleaning previous builds...")
@@ -72,6 +93,9 @@ def build_portable():
 
     size_mb = rose_exe.stat().st_size / (1024 * 1024)
     log(f"Rose.exe built: {size_mb:.1f} MB")
+
+    # Remove duplicate/unnecessary DLLs pulled in by PyInstaller's ctypes detection
+    _clean_duplicates(rose_dir)
 
     # Calculate SHA256
     sha256 = hashlib.sha256(rose_exe.read_bytes()).hexdigest()

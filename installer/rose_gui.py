@@ -1,6 +1,11 @@
-"""Rose Application GUI - Entry point for Rose.exe (no terminal window)."""
+"""Rose Application GUI - Entry point for Rose.exe (no terminal window).
+
+This is the main application that runs after installation.
+When built with PyInstaller, it is fully self-contained.
+"""
 import os
 import sys
+import json
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 from tkinter.font import Font
@@ -8,13 +13,35 @@ import threading
 import time
 from pathlib import Path
 
-# Ensure we can import agent modules
-ROOT = Path(__file__).parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
 APP_NAME = "Rose"
 APP_VERSION = "1.1.0"
+
+
+def get_app_dir() -> Path:
+    """Get the application directory (where Rose.exe or this script lives).
+
+    When built with PyInstaller, sys._MEIPASS points to the temp bundle dir,
+    but the executable itself is in a different location. We want the directory
+    containing Rose.exe, not the temp extraction dir.
+    """
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller bundle
+        # sys.executable is the path to Rose.exe
+        return Path(sys.executable).parent
+    else:
+        # Running as Python script
+        return Path(__file__).parent
+
+
+def get_data_dir() -> Path:
+    """Get the user data directory (%LOCALAPPDATA%\\Rose)."""
+    local_app = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
+    data_dir = Path(local_app) / "Rose"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    # Create standard subdirectories
+    for sub in ["logs", "data", "sessions", "workspace", "models", "cache"]:
+        (data_dir / sub).mkdir(exist_ok=True)
+    return data_dir
 
 
 class RoseTheme:
@@ -36,9 +63,15 @@ class RoseApp(tk.Tk):
         self.configure(bg=RoseTheme.BG)
         self.resizable(True, True)
 
+        self.app_dir = get_app_dir()
+        self.data_dir = get_data_dir()
+
+        # Set up sys.path so agent modules can be found
+        self._setup_paths()
+
         # Try to set window icon
         try:
-            icon_path = ROOT / "resources" / "rose.ico"
+            icon_path = self.app_dir / "resources" / "rose.ico"
             if icon_path.exists():
                 self.iconbitmap(str(icon_path))
         except Exception:
@@ -46,6 +79,20 @@ class RoseApp(tk.Tk):
 
         self._build_ui()
         self._start_agent()
+
+    def _setup_paths(self):
+        """Configure sys.path for the bundled or development environment."""
+        if getattr(sys, 'frozen', False):
+            # In PyInstaller bundle, modules are in _internal/
+            internal = self.app_dir / "_internal"
+            if internal.exists():
+                for p in [internal, internal / "agent", internal / "agent" / "core"]:
+                    if str(p) not in sys.path:
+                        sys.path.insert(0, str(p))
+        else:
+            # Development mode
+            if str(self.app_dir) not in sys.path:
+                sys.path.insert(0, str(self.app_dir))
 
     def _build_ui(self):
         # Header
@@ -127,7 +174,9 @@ class RoseApp(tk.Tk):
                 response = self.agent.chat(message)
                 self.after(0, lambda: self._append_message("Rose", response.text, RoseTheme.TEXT_SUCCESS))
             else:
-                self.after(0, lambda: self._append_message("Rose", "Agent not initialized. Please wait.", RoseTheme.TEXT_DIM))
+                self.after(0, lambda: self._append_message("Rose",
+                    "Agent not initialized. Please check model files in %LOCALAPPDATA%\\Rose\\models\\",
+                    RoseTheme.TEXT_DIM))
         except Exception as e:
             self.after(0, lambda: self._append_message("Rose", f"Error: {e}", "#e74c3c"))
         finally:
@@ -140,6 +189,14 @@ class RoseApp(tk.Tk):
     def _init_agent(self):
         try:
             self.after(0, lambda: self.status_var.set("Loading Rose..."))
+
+            # Set environment for model paths
+            models_dir = self.data_dir / "models"
+            os.environ["ROSE_DATA_DIR"] = str(self.data_dir)
+            os.environ["ROSE_MODELS_DIR"] = str(models_dir)
+            os.environ["MODEL_PATH"] = str(models_dir / "Qwen_Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf")
+            os.environ["MMPROJ_PATH"] = str(models_dir / "mmproj-Qwen_Qwen2.5-VL-7B-Instruct-f16.gguf")
+
             from agent.core.config import Config
             from agent.core.agent import Agent
 
@@ -149,17 +206,21 @@ class RoseApp(tk.Tk):
             if self.agent.initialize():
                 self.after(0, lambda: self._append_message("Rose",
                     f"Hello! I'm Rose, your autonomous AI assistant.\n"
-                    f"Powered by Qwen2.5-VL. How can I help you today?",
+                    f"Powered by Qwen2.5-VL. How can I help you today?\n\n"
+                    f"Models: {models_dir}",
                     RoseTheme.TEXT_SUCCESS))
                 self.after(0, lambda: self.status_var.set("Ready"))
             else:
                 self.after(0, lambda: self._append_message("Rose",
-                    "Warning: Agent initialization had issues. Some features may be limited.",
+                    "Warning: Agent initialization had issues. Some features may be limited.\n"
+                    f"Models directory: {models_dir}\n"
+                    "Ensure model files are downloaded to this directory.",
                     "#f39c12"))
                 self.after(0, lambda: self.status_var.set("Partial initialization"))
         except Exception as e:
             self.after(0, lambda: self._append_message("Rose",
-                f"Failed to initialize: {e}\nPlease check your configuration.",
+                f"Failed to initialize: {e}\n"
+                "Please ensure model files are present in %LOCALAPPDATA%\\Rose\\models\\",
                 "#e74c3c"))
             self.after(0, lambda: self.status_var.set("Initialization failed"))
 
