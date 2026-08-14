@@ -84,11 +84,10 @@ class RoseApp(tk.Tk):
         """Configure sys.path for the bundled or development environment."""
         if getattr(sys, 'frozen', False):
             # In PyInstaller bundle, modules are in _internal/
+            # Only add _internal - subdirectories break relative imports
             internal = self.app_dir / "_internal"
-            if internal.exists():
-                for p in [internal, internal / "agent", internal / "agent" / "core"]:
-                    if str(p) not in sys.path:
-                        sys.path.insert(0, str(p))
+            if internal.exists() and str(internal) not in sys.path:
+                sys.path.insert(0, str(internal))
         else:
             # Development mode
             if str(self.app_dir) not in sys.path:
