@@ -31,6 +31,18 @@ def _clean_duplicates(rose_dir: Path):
     if not internal.exists():
         return
 
+    # Move ucrtbase.dll from root to _internal/ (where python314.dll expects it)
+    ucrt_root = rose_dir / "ucrtbase.dll"
+    if ucrt_root.exists():
+        ucrt_dest = internal / "ucrtbase.dll"
+        if not ucrt_dest.exists():
+            import shutil
+            shutil.move(str(ucrt_root), str(ucrt_dest))
+            log("Moved ucrtbase.dll to _internal/")
+        else:
+            ucrt_root.unlink()
+            log("Removed duplicate ucrtbase.dll from root")
+
     # Remove cublas13 from CUDA toolkit (ggml-cuda uses cublas12 from nvidia pip package)
     for name in ["cublas64_13.dll", "cublasLt64_13.dll"]:
         f = internal / name

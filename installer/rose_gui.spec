@@ -8,8 +8,19 @@ from pathlib import Path
 ROOT = Path(SPECPATH).parent  # installer/ is one level below project root
 VENV_SITE = ROOT / '.venv' / 'Lib' / 'site-packages'
 
+# Python installation directory (for ucrtbase.dll)
+PYTHON_DIR = Path(sys.prefix)
+
 # Collect native DLLs that PyInstaller misses
 _binaries = []
+
+# UCRT (Universal C Runtime) - required by python314.dll on clean Windows
+# Copy from System32 since sys.prefix in venv points to .venv, not real Python install
+for _ucrt_candidate in [Path('C:/Windows/System32/ucrtbase.dll'),
+                         Path(sys.base_prefix) / 'ucrtbase.dll']:
+    if _ucrt_candidate.exists():
+        _binaries.append((str(_ucrt_candidate), '.'))
+        break
 
 # llama-cpp-python native libs (CUDA + CPU) - single copy only
 _llama_bin = VENV_SITE / 'llama_cpp' / 'lib'
